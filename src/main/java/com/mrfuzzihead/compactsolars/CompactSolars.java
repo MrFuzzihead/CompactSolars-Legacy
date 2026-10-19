@@ -3,9 +3,9 @@ package com.mrfuzzihead.compactsolars;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
@@ -22,8 +22,10 @@ import cpw.mods.fml.common.registry.GameRegistry;
     name = "CompactSolars",
     version = Tags.VERSION,
     acceptedMinecraftVersions = "1.7.10",
-    dependencies = "required-after:Forge@[10.12,);required-after:IC2@[2.1,)")
+    dependencies = "required-after:Forge@[10.12,);required-after:IC2@[2.2.828,)")
 public class CompactSolars {
+
+    private static final Logger LOG = LogManager.getLogger("CompactSolars");
 
     @SidedProxy(
         clientSide = "com.mrfuzzihead.compactsolars.client.ClientProxy",
@@ -42,19 +44,29 @@ public class CompactSolars {
             cfg.load();
             compactSolarBlock = new BlockCompactSolar();
             CompactSolarType.buildHats();
+
             Property scale = cfg.get("general", "scaleFactor", 1);
-            scale.comment = "The EU generation scaling factor. The average number of ticks needed to generate one EU packet.1 is every tick, 2 is every other tick etc. Each Solar will still generate a whole packet (8, 64, 512 EU).";
-            productionRate = scale.getInt(1);
-        } catch (Exception var7) {
-            FMLLog.log(
-                Level.ERROR,
-                var7,
-                "CompactSolars was unable to load it's configuration successfully",
-                new Object[0]);
-            throw new RuntimeException(var7);
-        } finally {
+            scale.comment = "Generation interval. 1 = generate every tick, 2 = generate on average every other tick, etc. "
+                + "Values below 1 are clamped to 1. This does not change the per-generation EU amount (8, 64 or 512 EU).";
+            int configuredRate = scale.getInt(1);
+            productionRate = sanitizeScaleFactor(configuredRate);
+            if (configuredRate < 1) {
+                LOG.warn("scaleFactor {} is invalid; using 1 instead.", configuredRate);
+            }
+
             cfg.save();
+        } catch (Exception e) {
+            LOG.error("CompactSolars was unable to load its configuration successfully", e);
+            throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Clamps the configurable generation interval to a usable value. A value below 1 would make
+     * {@link java.util.Random#nextInt(int)} throw, so all call sites go through this helper.
+     */
+    public static int sanitizeScaleFactor(int value) {
+        return Math.max(1, value);
     }
 
     @EventHandler

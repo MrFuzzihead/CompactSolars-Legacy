@@ -7,14 +7,15 @@ import net.minecraft.item.ItemStack;
 public class ItemCompactSolar extends ItemBlockWithMetadata {
 
     public ItemCompactSolar(Block b) {
-        super(b, CompactSolars.compactSolarBlock);
+        super(b, b);
     }
 
-    public int getMetadata(int i) {
-        return i < CompactSolarType.values().length ? i : 0;
+    public int getMetadata(int metadata) {
+        return CompactSolarType.clampMetadata(metadata);
     }
 
     public String getUnlocalizedName(ItemStack itemstack) {
-        return "tile.compactsolars:" + CompactSolarType.values()[itemstack.getItemDamage()].name() + "_block";
+        return CompactSolarType.byMetadata(itemstack.getItemDamage())
+            .getUnlocalizedName();
     }
 }

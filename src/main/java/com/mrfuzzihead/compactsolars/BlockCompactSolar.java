@@ -34,16 +34,22 @@ public class BlockCompactSolar extends BlockContainer {
         this.setCreativeTab(CreativeTabs.tabRedstone);
     }
 
-    public TileEntity createNewTileEntity(World var1, int i) {
-        return null;
-    }
-
-    public TileEntity createTileEntity(World world, int metadata) {
+    public TileEntity createNewTileEntity(World world, int metadata) {
         return CompactSolarType.makeEntity(metadata);
     }
 
-    public IIcon getIcon(int i, int j) {
-        return j >= CompactSolarType.values().length ? null : this.textures[j][i > 2 ? 2 : i];
+    public TileEntity createTileEntity(World world, int metadata) {
+        return createNewTileEntity(world, metadata);
+    }
+
+    public IIcon getIcon(int side, int metadata) {
+        if (this.textures == null) {
+            return null;
+        }
+
+        int meta = CompactSolarType.clampMetadata(metadata);
+        int face = side > 2 ? 2 : Math.max(side, 0);
+        return this.textures[meta][face];
     }
 
     public boolean onBlockActivated(World world, int i, int j, int k, EntityPlayer player, int s, float f1, float f2,
@@ -70,14 +76,14 @@ public class BlockCompactSolar extends BlockContainer {
         }
     }
 
-    public int damageDropped(int i) {
-        return i;
+    public int damageDropped(int metadata) {
+        return CompactSolarType.clampMetadata(metadata);
     }
 
     public void breakBlock(World world, int i, int j, int k, Block par5, int par6) {
-        TileEntityCompactSolar tileSolar = (TileEntityCompactSolar) world.getTileEntity(i, j, k);
-        if (tileSolar != null) {
-            this.dropContent(0, tileSolar, world);
+        TileEntity tile = world.getTileEntity(i, j, k);
+        if (tile instanceof TileEntityCompactSolar) {
+            this.dropContent(0, (TileEntityCompactSolar) tile, world);
         }
 
         super.breakBlock(world, i, j, k, par5, par6);
