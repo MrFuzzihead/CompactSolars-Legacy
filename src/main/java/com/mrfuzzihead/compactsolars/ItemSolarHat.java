@@ -44,7 +44,8 @@ public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
 
     public void onArmorTick(World worldObj, EntityPlayer player, ItemStack itemStack) {
         if (!worldObj.isRemote && !worldObj.provider.hasNoSky) {
-            if (CompactSolars.productionRate == 1 || random.nextInt(CompactSolars.productionRate) == 0) {
+            int interval = CompactSolars.sanitizeScaleFactor(CompactSolars.productionRate);
+            if (interval == 1 || random.nextInt(interval) == 0) {
                 int xCoord = MathHelper.floor_double(player.posX);
                 int zCoord = MathHelper.floor_double(player.posZ);
                 boolean isRaining = false;

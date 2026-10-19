@@ -10,6 +10,12 @@ import net.minecraft.item.ItemStack;
 
 public class ContainerCompactSolar extends Container {
 
+    private static final int MACHINE_SLOT = 0;
+    private static final int INV_START = 1;
+    private static final int INV_END = 28;
+    private static final int HOTBAR_START = 28;
+    private static final int HOTBAR_END = 37;
+
     public TileEntityCompactSolar tile;
     private boolean theSunIsVisible;
     private boolean initialized;
@@ -21,8 +27,8 @@ public class ContainerCompactSolar extends Container {
         this.layoutContainer(playerInventory, inventory, type);
     }
 
-    private void layoutContainer(IInventory playerInventory, IInventory inventory, CompactSolarType type) {
-        this.addSlotToContainer(new Slot(inventory, 0, 80, 26));
+    private void layoutContainer(IInventory playerInventory, TileEntityCompactSolar inventory, CompactSolarType type) {
+        this.addSlotToContainer(new SlotCharge(inventory, MACHINE_SLOT, 80, 26));
 
         for (int inventoryRow = 0; inventoryRow < 3; inventoryRow++) {
             for (int inventoryColumn = 0; inventoryColumn < 9; inventoryColumn++) {
@@ -69,19 +75,20 @@ public class ContainerCompactSolar extends Container {
         if (slot != null && slot.getHasStack()) {
             ItemStack itemstack1 = slot.getStack();
             itemstack = itemstack1.copy();
-            if (i == 0) {
-                if (!this.mergeItemStack(itemstack1, 1, 37, true)) {
+            if (i == MACHINE_SLOT) {
+                if (!this.mergeItemStack(itemstack1, INV_START, HOTBAR_END, true)) {
                     return null;
                 }
-            } else if (i >= 1 && i < 28) {
-                if (!this.mergeItemStack(itemstack1, 28, 37, false)) {
+            } else if (i >= INV_START && i < INV_END) {
+                if (!this.mergeIntoMachine(itemstack1)
+                    && !this.mergeItemStack(itemstack1, HOTBAR_START, HOTBAR_END, false)) {
                     return null;
                 }
-            } else if (i >= 28 && i < 37) {
-                if (!this.mergeItemStack(itemstack1, 1, 27, false)) {
+            } else if (i >= HOTBAR_START && i < HOTBAR_END) {
+                if (!this.mergeIntoMachine(itemstack1) && !this.mergeItemStack(itemstack1, INV_START, INV_END, false)) {
                     return null;
                 }
-            } else if (!this.mergeItemStack(itemstack1, 1, 37, false)) {
+            } else if (!this.mergeItemStack(itemstack1, INV_START, HOTBAR_END, false)) {
                 return null;
             }
 
@@ -99,6 +106,16 @@ public class ContainerCompactSolar extends Container {
         }
 
         return itemstack;
+    }
+
+    /**
+     * Container.mergeItemStack does not consult Slot.isItemValid, so shift-click has to check the
+     * target slot explicitly before trying to move a stack into the charge slot.
+     */
+    private boolean mergeIntoMachine(ItemStack stack) {
+        Slot machine = (Slot) this.inventorySlots.get(MACHINE_SLOT);
+        return machine != null && machine.isItemValid(stack)
+            && this.mergeItemStack(stack, MACHINE_SLOT, MACHINE_SLOT + 1, false);
     }
 
     public EntityPlayer getPlayer() {

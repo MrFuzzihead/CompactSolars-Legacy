@@ -10,6 +10,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 
 import ic2.api.energy.prefab.BasicSource;
+import ic2.api.item.ElectricItem;
 import ic2.api.item.IElectricItem;
 import ic2.api.tile.IWrenchable;
 
@@ -36,13 +37,23 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         this.energySource = new BasicSource(this, type.maxStorage, type.ordinal() + 1);
     }
 
+    @Override
     public void updateEntity() {
+        if (this.worldObj == null || this.worldObj.isRemote) {
+            return;
+        }
+
         this.energySource.onUpdateEntity();
-        if (!this.initialized && this.worldObj != null) {
+        if (!this.initialized) {
             this.canRain = this.worldObj.getWorldChunkManager()
                 .getBiomeGenAt(this.xCoord, this.zCoord)
                 .getIntRainfall() > 0;
             this.noSunlight = this.worldObj.provider.hasNoSky;
+            if (this.noSunlight) {
+                this.theSunIsVisible = false;
+            } else {
+                this.updateSunState();
+            }
             this.initialized = true;
         }
 
@@ -53,14 +64,18 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
             }
 
             int energyProduction = 0;
-            if (this.theSunIsVisible
-                && (CompactSolars.productionRate == 1 || random.nextInt(CompactSolars.productionRate) == 0)) {
-                energyProduction = this.generateEnergy();
+            if (this.theSunIsVisible) {
+                int interval = CompactSolars.sanitizeScaleFactor(CompactSolars.productionRate);
+                if (interval == 1 || random.nextInt(interval) == 0) {
+                    energyProduction = this.generateEnergy();
+                }
             }
 
             this.energySource.addEnergy(energyProduction);
             if (this.inventory[0] != null && this.inventory[0].getItem() instanceof IElectricItem) {
-                this.energySource.charge(this.inventory[0]);
+                if (this.energySource.charge(this.inventory[0])) {
+                    this.markDirty();
+                }
             }
         }
     }
@@ -192,6 +207,19 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         return this.type;
     }
 
+    public int getTier() {
+        return this.type.ordinal() + 1;
+    }
+
+    /**
+     * Mirrors IC2's charge-slot validation: the item must be electric, accept the array's tier, and
+     * have room for at least some charge. The simulated call ignores the item's transfer limit.
+     */
+    public boolean isValidCharge(ItemStack itemstack) {
+        return itemstack != null && itemstack.getItem() instanceof IElectricItem
+            && ElectricItem.manager.charge(itemstack, Double.POSITIVE_INFINITY, this.getTier(), true, true) > 0.0D;
+    }
+
     public void onChunkUnload() {
         this.energySource.onChunkUnload();
     }
@@ -223,7 +251,8 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         return false;
     }
 
-    public boolean isItemValidForSlot(int i, ItemStack itemstack) {
-        return itemstack != null && itemstack.getItem() instanceof IElectricItem;
+    @Override
+    public boolean isItemValidForSlot(int slot, ItemStack itemstack) {
+        return slot == 0 && this.isValidCharge(itemstack);
     }
 }
