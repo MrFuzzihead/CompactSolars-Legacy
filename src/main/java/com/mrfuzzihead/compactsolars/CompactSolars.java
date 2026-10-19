@@ -52,6 +52,7 @@ public class CompactSolars {
             productionRate = sanitizeScaleFactor(configuredRate);
             if (configuredRate < 1) {
                 LOG.warn("scaleFactor {} is invalid; using 1 instead.", configuredRate);
+                scale.setValue(productionRate);
             }
 
             cfg.save();
