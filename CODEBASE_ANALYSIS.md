@@ -16,7 +16,7 @@
 > registration out of the tier enum, removed the duplicate GUI enum and unused container state, and
 > removed dead tier fields. Batch 5 replaced the `BasicSource` prefab with a direct `IEnergySource`
 > for exact 16/128/1024 EU storage and added the blocks/hats to IC2's creative tab. Batch 6 added
-> IC2-style wrench behavior (90% tier preservation, LV fallback on non-wrench breaks/failed rolls)
+> IC2-style wrench behavior (90% tier preservation, Basic Machine Casing fallback on non-wrench breaks/failed rolls)
 > with a config switch. This document describes the state at the time of the review; check the
 > current source and git history for what has landed.
 

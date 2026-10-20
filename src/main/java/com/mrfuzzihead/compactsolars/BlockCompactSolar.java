@@ -1,5 +1,6 @@
 package com.mrfuzzihead.compactsolars;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -19,6 +20,7 @@ import net.minecraft.world.World;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import ic2.api.item.IC2Items;
 import ic2.core.IC2;
 
 public class BlockCompactSolar extends BlockContainer {
@@ -78,13 +80,23 @@ public class BlockCompactSolar extends BlockContainer {
         }
     }
 
-    /**
-     * IC2-style break drop. Without a wrench (or when a wrench roll fails) the lowest tier is
-     * dropped; a successful wrench operation replaces this with the correct tier via
-     * IWrenchable#getWrenchDrop.
-     */
+    @Override
+    public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
+        ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+        if (CompactSolars.wrenchParity) {
+            ItemStack casing = IC2Items.getItem("machine");
+            if (casing != null) {
+                drops.add(casing.copy());
+                return drops;
+            }
+        }
+
+        drops.add(new ItemStack(this, 1, CompactSolarType.clampMetadata(metadata)));
+        return drops;
+    }
+
     public int damageDropped(int metadata) {
-        return CompactSolars.breakDropMetadata(metadata, CompactSolars.wrenchParity);
+        return CompactSolarType.clampMetadata(metadata);
     }
 
     public void breakBlock(World world, int i, int j, int k, Block par5, int par6) {

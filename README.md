@@ -70,16 +70,16 @@ Hats use a single shared, infinite-durability armor material. Their tooltip show
 | --- | ---: | --- |
 | `general.scaleFactor` | `1` | Generation interval. `1` generates every tick; `2` generates on average every other tick, etc. Values below `1` are clamped to `1`. This does not change the per-generation EU amount. |
 | `general.solarBaseValue` | IC2's `balance/energy/generator/solar` (usually `1.0`) | EU/t per panel at full sky light (15). Set to `0` to disable generation. Negative or NaN values fall back to `1.0`. |
-| `general.wrenchParity` | `true` | IC2-style wrench behavior: breaking without a wrench drops an LV array, and a wrench has a 90% chance to preserve the tier. Set `false` for the old always-drop behavior. |
+| `general.wrenchParity` | `true` | IC2-style wrench behavior: breaking without a wrench drops a Basic Machine Casing, and a wrench has a 90% chance to preserve the tier. Set `false` for the old always-drop behavior. |
 
 ## Wrench behavior
 
 With `wrenchParity=true` (the default):
 
-- Breaking an array without a wrench drops an **LV array**, even for MV/HV. This is the CompactSolars
-  analog of IC2 dropping a basic Generator when a machine is broken without a wrench.
-- A wrench roll has a **90%** chance to preserve the original tier. On failure, the normal LV drop is
-  used.
+- Breaking an array without a wrench drops a **Basic Machine Casing**, even for MV/HV. This is the
+  IC2-style machine drop for a machine broken without a wrench.
+- A wrench roll has a **90%** chance to preserve the original tier. On failure, the normal Basic
+  Machine Casing drop is used.
 - IC2's electric wrench lossless mode can force a successful wrench operation, matching IC2's
   behavior.
 - Set `wrenchParity=false` to restore the old behavior: every break drops the exact tier.

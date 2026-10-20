@@ -72,8 +72,8 @@ public class CompactSolars {
 
             Property wrench = cfg.get("general", "wrenchParity", true);
             wrench.comment = "IC2-style wrench behavior. When true, breaking an array without a wrench "
-                + "drops an LV array and a wrench has a 90% chance to preserve the tier. Set false for "
-                + "the old always-drop behavior.";
+                + "drops a Basic Machine Casing and a wrench has a 90% chance to preserve the tier. Set "
+                + "false for the old always-drop behavior.";
             wrenchParity = wrench.getBoolean(true);
 
             cfg.save();
@@ -97,11 +97,6 @@ public class CompactSolars {
             return 1.0D;
         }
         return value;
-    }
-
-    /** Returns the metadata dropped when the block is broken normally (or a wrench roll fails). */
-    public static int breakDropMetadata(int metadata, boolean wrenchParity) {
-        return wrenchParity ? 0 : CompactSolarType.clampMetadata(metadata);
     }
 
     /** Reads IC2's balance/energy/generator/solar value, falling back to 1.0 if unavailable. */
