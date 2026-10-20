@@ -36,9 +36,18 @@ Each tier also has a solar hat that charges electric armor while the player is i
 | HV Solar Hat | 512 EU/t | 3 |
 
 The hat charges all equipped electric armor except itself, is limited by the armor's transfer limit,
-and builds up a confusion effect while it is actively charging. IC2's own solar helmet charges only
-the chestplate at 1 EU/t and ignores transfer limits; the hat behavior is intentionally different and
-is documented in the analysis.
+and builds up a confusion effect while it is actively charging.
+
+IC2's own solar helmet behavior is different:
+
+- charges **only the chestplate**;
+- charges at **1 EU/t**, regardless of how many panels the helmet represents;
+- accepts **any tier** (`Integer.MAX_VALUE`) and ignores the item's transfer limit;
+- uses the same binary sun-visible check, with no sky-light scaling;
+- has no confusion/build-up mechanic;
+- has infinite durability and zero armor display.
+
+CompactSolars hats intentionally use the array-rate, all-armor behavior instead.
 
 Hats use a single shared, infinite-durability armor material. Their tooltip shows the charge rate
 (`Power Output: X EU/t max`), the power tier, and a short description.
@@ -61,6 +70,19 @@ Hats use a single shared, infinite-durability armor material. Their tooltip show
 | --- | ---: | --- |
 | `general.scaleFactor` | `1` | Generation interval. `1` generates every tick; `2` generates on average every other tick, etc. Values below `1` are clamped to `1`. This does not change the per-generation EU amount. |
 | `general.solarBaseValue` | IC2's `balance/energy/generator/solar` (usually `1.0`) | EU/t per panel at full sky light (15). Set to `0` to disable generation. Negative or NaN values fall back to `1.0`. |
+| `general.wrenchParity` | `true` | IC2-style wrench behavior: breaking without a wrench drops an LV array, and a wrench has a 90% chance to preserve the tier. Set `false` for the old always-drop behavior. |
+
+## Wrench behavior
+
+With `wrenchParity=true` (the default):
+
+- Breaking an array without a wrench drops an **LV array**, even for MV/HV. This is the CompactSolars
+  analog of IC2 dropping a basic Generator when a machine is broken without a wrench.
+- A wrench roll has a **90%** chance to preserve the original tier. On failure, the normal LV drop is
+  used.
+- IC2's electric wrench lossless mode can force a successful wrench operation, matching IC2's
+  behavior.
+- Set `wrenchParity=false` to restore the old behavior: every break drops the exact tier.
 
 ## Recipes
 
@@ -103,7 +125,6 @@ The array generation rules now match IC2's solar generator:
 Remaining known differences:
 
 - Hats use the array-rate/all-armor behavior described above rather than IC2's solar-helmet behavior.
-- Wrench behavior is still drop-rate 1.0 and does not require a wrench.
 - The GPLv3/MIT licensing question is unresolved.
 
 See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
