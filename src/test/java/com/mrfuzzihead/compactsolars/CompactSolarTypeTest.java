@@ -27,6 +27,10 @@ class CompactSolarTypeTest {
         assertEquals(64, CompactSolarType.MV.getOutput());
         assertEquals(512, CompactSolarType.HV.getOutput());
 
+        assertEquals(1, CompactSolarType.LV.getTier());
+        assertEquals(2, CompactSolarType.MV.getTier());
+        assertEquals(3, CompactSolarType.HV.getTier());
+
         assertEquals(8, CompactSolarType.LV.panels);
         assertEquals(64, CompactSolarType.MV.panels);
         assertEquals(512, CompactSolarType.HV.panels);
