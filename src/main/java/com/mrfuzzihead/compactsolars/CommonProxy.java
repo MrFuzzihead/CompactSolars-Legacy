@@ -16,7 +16,7 @@ public class CommonProxy implements IGuiHandler {
         TileEntity te = world.getTileEntity(X, Y, Z);
         if (te != null && te instanceof TileEntityCompactSolar) {
             TileEntityCompactSolar tecs = (TileEntityCompactSolar) te;
-            return new ContainerCompactSolar(player.inventory, tecs, tecs.getType());
+            return new ContainerCompactSolar(player.inventory, tecs);
         } else {
             return null;
         }

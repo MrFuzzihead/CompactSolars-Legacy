@@ -1,35 +1,23 @@
 package com.mrfuzzihead.compactsolars;
 
-import net.minecraft.init.Items;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.oredict.OreDictionary;
-import net.minecraftforge.oredict.ShapedOreRecipe;
-import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import cpw.mods.fml.common.registry.GameRegistry;
-import ic2.api.item.IC2Items;
 
 public enum CompactSolarType {
 
-    LV(8, 32, "Low Voltage Solar Array", "lvTransformer", TileEntityCompactSolar.class, "lvHat"),
-    MV(64, 128, "Medium Voltage Solar Array", "mvTransformer", TileEntityCompactSolarMV.class, "mvHat"),
-    HV(512, 512, "High Voltage Solar Array", "hvTransformer", TileEntityCompactSolarHV.class, "hvHat");
+    LV(8, 32, "lvTransformer", "lvHat"),
+    MV(64, 128, "mvTransformer", "mvHat"),
+    HV(512, 512, "hvTransformer", "hvHat");
 
     private static final CompactSolarType[] VALUES = values();
     private static final Logger LOG = LogManager.getLogger("CompactSolars");
 
-    /** Ore dictionary names used by the array recipes. Other mods may register alternatives. */
-    public static final String ORE_SOLAR_PANEL = "solarPanel";
-    public static final String ORE_HELMET_IRON = "helmetIron";
-
-    private int output;
-    public Class<? extends TileEntityCompactSolar> clazz;
-    public String friendlyName;
-    public String transformerName;
+    private final int output;
+    private final String transformerName;
     public final ResourceLocation hatTexture;
     public final String hatName;
     private ItemSolarHat item;
@@ -40,13 +28,10 @@ public enum CompactSolarType {
     public final int maxStorage;
     private final String unlocalizedName;
 
-    private CompactSolarType(int output, int outputPacketSize, String friendlyName, String transformerName,
-        Class<? extends TileEntityCompactSolar> clazz, String hatTexture) {
+    private CompactSolarType(int output, int outputPacketSize, String transformerName, String hatTexture) {
         this.output = output;
         this.outputPacketSize = outputPacketSize;
-        this.friendlyName = friendlyName;
         this.transformerName = transformerName;
-        this.clazz = clazz;
         this.hatName = "solarHat" + this.name();
         this.hatTexture = new ResourceLocation("compactsolars", "textures/armor/" + hatTexture + ".png");
         this.hatItemTexture = new ResourceLocation("compactsolars", hatTexture);
@@ -66,44 +51,12 @@ public enum CompactSolarType {
         return VALUES[clampMetadata(metadata)];
     }
 
-    public static void generateRecipes(BlockCompactSolar block) {
-        if (block == null) {
-            LOG.error("Cannot register CompactSolars recipes: the compact solar block is null.");
-            return;
-        }
-
-        ItemStack solar = IC2Items.getItem("solarPanel");
-        if (solar == null) {
-            LOG.error("Cannot register CompactSolars recipes: IC2 solarPanel is missing.");
-            return;
-        }
-
-        OreDictionary.registerOre(ORE_SOLAR_PANEL, solar);
-        ItemStack parent = solar;
-
-        for (CompactSolarType typ : VALUES) {
-            ItemStack transformer = IC2Items.getItem(typ.transformerName);
-            if (transformer == null) {
-                LOG.error(
-                    "Cannot register the {} compact solar recipe: IC2 {} is missing.",
-                    typ.name(),
-                    typ.transformerName);
-                return;
-            }
-
-            String transformerOre = typ.transformerOreName();
-            OreDictionary.registerOre(transformerOre, transformer);
-
-            ItemStack target = new ItemStack(block, 1, typ.ordinal());
-            Object source = typ == LV ? ORE_SOLAR_PANEL : parent;
-            GameRegistry.addRecipe(new ShapedOreRecipe(target, "SSS", "SXS", "SSS", 'S', source, 'X', transformerOre));
-
-            parent = target;
-        }
-    }
-
     public int getOutput() {
         return this.output;
+    }
+
+    public String getTransformerName() {
+        return this.transformerName;
     }
 
     public int getTier() {
@@ -123,15 +76,20 @@ public enum CompactSolarType {
             LOG.warn("Invalid CompactSolars metadata {}; falling back to LV.", metadata);
         }
 
-        try {
-            return byMetadata(metadata).clazz.newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to create a CompactSolars tile entity for metadata " + metadata, e);
-        }
+        return new TileEntityCompactSolar(byMetadata(metadata));
     }
 
-    public int getTextureRow() {
-        return this.ordinal();
+    /** Maps the old per-tier tile entity IDs to the unified tile entity's tier. */
+    public static CompactSolarType fromLegacyTileEntityId(String id) {
+        if (id != null) {
+            for (CompactSolarType typ : VALUES) {
+                if (typ.tileEntityName()
+                    .equals(id)) {
+                    return typ;
+                }
+            }
+        }
+        return LV;
     }
 
     public String tileEntityName() {
@@ -144,31 +102,8 @@ public enum CompactSolarType {
         return this.item;
     }
 
-    public static void buildHats() {
-        for (CompactSolarType typ : VALUES) {
-            typ.buildHat();
-        }
+    public ItemSolarHat getHatItem() {
+        return this.item;
     }
 
-    public static void generateHatRecipes(BlockCompactSolar block) {
-        if (block == null) {
-            LOG.error("Cannot register CompactSolars hat recipes: the compact solar block is null.");
-            return;
-        }
-
-        OreDictionary.registerOre(ORE_HELMET_IRON, new ItemStack(Items.iron_helmet));
-
-        for (CompactSolarType typ : VALUES) {
-            if (typ.item == null) {
-                LOG.error("Cannot register the {} solar hat recipe: the hat item is not registered.", typ.name());
-                continue;
-            }
-
-            GameRegistry.addRecipe(
-                new ShapelessOreRecipe(
-                    new ItemStack(typ.item),
-                    new ItemStack(block, 1, typ.ordinal()),
-                    ORE_HELMET_IRON));
-        }
-    }
 }

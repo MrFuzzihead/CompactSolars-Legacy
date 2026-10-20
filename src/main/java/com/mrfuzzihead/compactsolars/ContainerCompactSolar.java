@@ -1,7 +1,6 @@
 package com.mrfuzzihead.compactsolars;
 
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ICrafting;
 import net.minecraft.inventory.IInventory;
@@ -19,15 +18,13 @@ public class ContainerCompactSolar extends Container {
     public TileEntityCompactSolar tile;
     private boolean theSunIsVisible;
     private boolean initialized;
-    private EntityPlayer myPlayer;
 
-    public ContainerCompactSolar(IInventory playerInventory, TileEntityCompactSolar inventory, CompactSolarType type) {
+    public ContainerCompactSolar(IInventory playerInventory, TileEntityCompactSolar inventory) {
         this.tile = inventory;
-        this.myPlayer = ((InventoryPlayer) playerInventory).player;
-        this.layoutContainer(playerInventory, inventory, type);
+        this.layoutContainer(playerInventory, inventory);
     }
 
-    private void layoutContainer(IInventory playerInventory, TileEntityCompactSolar inventory, CompactSolarType type) {
+    private void layoutContainer(IInventory playerInventory, TileEntityCompactSolar inventory) {
         this.addSlotToContainer(new SlotCharge(inventory, MACHINE_SLOT, 80, 26));
 
         for (int inventoryRow = 0; inventoryRow < 3; inventoryRow++) {
@@ -118,7 +115,4 @@ public class ContainerCompactSolar extends Container {
             && this.mergeItemStack(stack, MACHINE_SLOT, MACHINE_SLOT + 1, false);
     }
 
-    public EntityPlayer getPlayer() {
-        return this.myPlayer;
-    }
 }

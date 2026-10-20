@@ -46,7 +46,7 @@ public class CompactSolars {
         try {
             cfg.load();
             compactSolarBlock = new BlockCompactSolar();
-            CompactSolarType.buildHats();
+            CompactSolarItems.registerHats();
 
             Property scale = cfg.get("general", "scaleFactor", 1);
             scale.comment = "Generation interval. 1 = generate every tick, 2 = generate on average every other tick, etc. "
@@ -108,9 +108,13 @@ public class CompactSolars {
     public void load(FMLInitializationEvent init) {
         GameRegistry.registerBlock(compactSolarBlock, ItemCompactSolar.class, "CompactSolarBlock");
 
-        for (CompactSolarType typ : CompactSolarType.values()) {
-            GameRegistry.registerTileEntity(typ.clazz, typ.tileEntityName());
+        CompactSolarType[] types = CompactSolarType.values();
+        String[] legacyIds = new String[types.length];
+        for (int i = 0; i < types.length; i++) {
+            legacyIds[i] = types[i].tileEntityName();
         }
+        GameRegistry
+            .registerTileEntityWithAlternatives(TileEntityCompactSolar.class, "CompactSolars:SolarArray", legacyIds);
 
         proxy.registerTileEntityRenderers();
         proxy.registerRenderInformation();
@@ -119,8 +123,7 @@ public class CompactSolars {
 
     @EventHandler
     public void modsLoaded(FMLPostInitializationEvent postinit) {
-        CompactSolarType.generateRecipes(compactSolarBlock);
-        CompactSolarType.generateHatRecipes(compactSolarBlock);
+        CompactSolarRecipes.register(compactSolarBlock);
     }
 
     @EventHandler

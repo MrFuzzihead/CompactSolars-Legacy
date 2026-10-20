@@ -20,7 +20,7 @@ public class ClientProxy extends CommonProxy {
         TileEntity te = world.getTileEntity(X, Y, Z);
         if (te != null && te instanceof TileEntityCompactSolar) {
             TileEntityCompactSolar tecs = (TileEntityCompactSolar) te;
-            return GUISolar.GUI.buildGUI(tecs.getType(), player.inventory, tecs);
+            return new GUISolar(tecs.getType(), player.inventory, tecs);
         } else {
             return null;
         }

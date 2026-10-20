@@ -1,7 +1,6 @@
 package com.mrfuzzihead.compactsolars.client;
 
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
@@ -15,15 +14,14 @@ import com.mrfuzzihead.compactsolars.TileEntityCompactSolar;
 public class GUISolar extends GuiContainer {
 
     public static final ResourceLocation gui = new ResourceLocation("ic2", "textures/gui/GUISolarGenerator.png");
-    private GUISolar.GUI type;
+    private final ContainerCompactSolar container;
     private final String title;
-    private ContainerCompactSolar container = (ContainerCompactSolar) this.inventorySlots;
 
-    private GUISolar(GUISolar.GUI type, IInventory player, TileEntityCompactSolar chest) {
-        super(type.makeContainer(player, chest));
-        this.type = type;
+    public GUISolar(CompactSolarType type, IInventory player, TileEntityCompactSolar chest) {
+        super(new ContainerCompactSolar(player, chest));
+        this.container = (ContainerCompactSolar) this.inventorySlots;
         this.allowUserInput = false;
-        this.title = StatCollector.translateToLocal(type.mainType.getUnlocalizedName() + ".name");
+        this.title = StatCollector.translateToLocal(type.getUnlocalizedName() + ".name");
     }
 
     protected void drawGuiContainerForegroundLayer(int p1, int p2) {
@@ -40,34 +38,6 @@ public class GUISolar extends GuiContainer {
         this.drawTexturedModalRect(l, i1, 0, 0, this.xSize, this.ySize);
         if (this.container.tile.theSunIsVisible) {
             this.drawTexturedModalRect(l + 80, i1 + 45, 176, 0, 14, 14);
-        }
-    }
-
-    public static enum GUI {
-
-        LV(CompactSolarType.LV),
-        MV(CompactSolarType.MV),
-        HV(CompactSolarType.HV);
-
-        private CompactSolarType mainType;
-
-        private GUI(CompactSolarType mainType) {
-            this.mainType = mainType;
-        }
-
-        protected Container makeContainer(IInventory player, TileEntityCompactSolar solarTile) {
-            return new ContainerCompactSolar(player, solarTile, this.mainType);
-        }
-
-        public static GUISolar buildGUI(CompactSolarType type, IInventory playerInventory,
-            TileEntityCompactSolar solarTile) {
-            for (GUISolar.GUI gui : values()) {
-                if (solarTile.getType() == gui.mainType) {
-                    return new GUISolar(gui, playerInventory, solarTile);
-                }
-            }
-
-            return null;
         }
     }
 }

@@ -17,6 +17,7 @@ import ic2.api.tile.IWrenchable;
 public class TileEntityCompactSolar extends TileEntity implements IInventory, IWrenchable {
 
     private static final int SUN_UPDATE_INTERVAL = 128;
+    private static final String NBT_TIER = "Tier";
 
     private BasicSource energySource;
     private static Random random = new Random();
@@ -35,7 +36,7 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         this.type = type;
         this.inventory = new ItemStack[1];
         this.tick = random.nextInt(SUN_UPDATE_INTERVAL);
-        this.energySource = new BasicSource(this, type.maxStorage, type.ordinal() + 1);
+        this.energySource = new BasicSource(this, type.maxStorage, type.getTier());
     }
 
     @Override
@@ -170,6 +171,7 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
 
     public void writeToNBT(NBTTagCompound nbttagcompound) {
         super.writeToNBT(nbttagcompound);
+        nbttagcompound.setByte(NBT_TIER, (byte) this.type.ordinal());
         NBTTagList nbttaglist = new NBTTagList();
 
         for (int i = 0; i < this.inventory.length; i++) {
@@ -187,6 +189,8 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
+        this.type = readType(nbttagcompound);
+        this.energySource = new BasicSource(this, this.type.maxStorage, this.type.getTier());
         this.energySource.onReadFromNbt(nbttagcompound);
         NBTTagList nbttaglist = nbttagcompound.getTagList("Items", 9);
         this.inventory = new ItemStack[this.getSizeInventory()];
@@ -198,6 +202,13 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
                 this.inventory[j] = ItemStack.loadItemStackFromNBT(nbttagcompound1);
             }
         }
+    }
+
+    private static CompactSolarType readType(NBTTagCompound nbttagcompound) {
+        if (nbttagcompound.hasKey(NBT_TIER)) {
+            return CompactSolarType.byMetadata(nbttagcompound.getByte(NBT_TIER) & 255);
+        }
+        return CompactSolarType.fromLegacyTileEntityId(nbttagcompound.getString("id"));
     }
 
     public CompactSolarType getType() {
