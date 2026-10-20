@@ -50,6 +50,15 @@ class CompactSolarTypeTest {
     }
 
     @Test
+    void legacyTileEntityIdsMapToTiers() {
+        assertEquals(CompactSolarType.LV, CompactSolarType.fromLegacyTileEntityId("CompactSolarType.LV"));
+        assertEquals(CompactSolarType.MV, CompactSolarType.fromLegacyTileEntityId("CompactSolarType.MV"));
+        assertEquals(CompactSolarType.HV, CompactSolarType.fromLegacyTileEntityId("CompactSolarType.HV"));
+        assertEquals(CompactSolarType.LV, CompactSolarType.fromLegacyTileEntityId(null));
+        assertEquals(CompactSolarType.LV, CompactSolarType.fromLegacyTileEntityId("unknown"));
+    }
+
+    @Test
     void transformerOreNamesMatchRecipeInputs() {
         assertEquals("transformerLV", CompactSolarType.LV.transformerOreName());
         assertEquals("transformerMV", CompactSolarType.MV.transformerOreName());
