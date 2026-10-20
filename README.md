@@ -16,12 +16,11 @@ IC2 solar panels into a single block.
 
 | Tier | Equivalent IC2 panels | Output at full sun | IC2 tier | Packet power | Buffer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| LV | 8 | 8 EU/t | 1 | 32 EU | 32 EU |
+| LV | 8 | 8 EU/t | 1 | 32 EU | 16 EU |
 | MV | 64 | 64 EU/t | 2 | 128 EU | 128 EU |
 | HV | 512 | 512 EU/t | 3 | 512 EU | 1024 EU |
 
-The buffer is two panels' worth of storage (16/128/1024 EU). `BasicSource` cannot go below one
-packet, so LV's 16 EU is raised to 32 EU.
+The buffer is exactly two panels' worth of storage (16/128/1024 EU).
 
 Output now follows IC2's solar rules: it scales linearly with `skyLight / 15` and uses IC2's
 `balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512 EU/t.
@@ -50,6 +49,7 @@ Hats use a single shared, infinite-durability armor material. Their tooltip show
   IC2's own localization keys.
 - **Hat tooltip:** shows the charge rate, `Power Tier: n`, and a short description.
 - **GUI:** the array title and inventory label are localized.
+- **Creative menu:** arrays and solar hats are listed in IC2's creative tab.
 - **Sound:** uses IC2's metal block step/place/break sound. IC2's solar panel has no ambient
   generator loop, so there is no continuous hum.
 
@@ -102,7 +102,6 @@ The array generation rules now match IC2's solar generator:
 
 Remaining known differences:
 
-- LV buffer is 32 EU instead of an exact 16 EU (the IC2 `BasicSource` minimum is one packet).
 - Hats use the array-rate/all-armor behavior described above rather than IC2's solar-helmet behavior.
 - Wrench behavior is still drop-rate 1.0 and does not require a wrench.
 - The GPLv3/MIT licensing question is unresolved.

@@ -6,15 +6,16 @@
 `ic2/core/block/generator/tileentity/TileEntityBaseGenerator.java`, decompiled from the
 `industrialcraft-2:2.2.828-experimental:dev` jar used by this build.
 
-> **Status note (batches 1-4):** Batch 1 implemented config/metadata crash guards, server-only tile
+> **Status note (batches 1-5):** Batch 1 implemented config/metadata crash guards, server-only tile
 > updates, on-load sun refresh, charge-slot validation and shift-click fixes, recipe guards, and
 > OreDictionary recipe inputs. Batch 2 implemented IC2's sun predicate and linear sky-light scaling,
-> IC2's solar balance config, 128-tick refresh, two-panel storage (LV clamped to one packet by
-> `BasicSource`), IC2's power-output tooltip format, and the metal block step sound. Batch 3 added
-> solar-hat tooltips, a single infinite-durability hat material, consistent hat build-up decay, and
-> localized GUI title/inventory labels. Batch 4 unified the three tile entities into one tier-NBT tile
-> entity with legacy ID aliases, split recipe/hat registration out of the tier enum, removed the
-> duplicate GUI enum and unused container state, and removed dead tier fields. This document
+> IC2's solar balance config, 128-tick refresh, two-panel storage, IC2's power-output tooltip format,
+> and the metal block step sound. Batch 3 added solar-hat tooltips, a single infinite-durability hat
+> material, consistent hat build-up decay, and localized GUI title/inventory labels. Batch 4 unified
+> the three tile entities into one tier-NBT tile entity with legacy ID aliases, split recipe/hat
+> registration out of the tier enum, removed the duplicate GUI enum and unused container state, and
+> removed dead tier fields. Batch 5 replaced the `BasicSource` prefab with a direct `IEnergySource`
+> for exact 16/128/1024 EU storage and added the blocks/hats to IC2's creative tab. This document
 > describes the state at the time of the review; check the current source and git history for what
 > has landed.
 
