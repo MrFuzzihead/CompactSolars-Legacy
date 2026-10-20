@@ -1,7 +1,6 @@
 package com.mrfuzzihead.compactsolars;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import net.minecraft.client.renderer.texture.IIconRegister;
@@ -11,8 +10,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemArmor.ArmorMaterial;
 import net.minecraft.item.ItemStack;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
@@ -20,13 +17,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.ISpecialArmor;
 import net.minecraftforge.common.util.EnumHelper;
 
-import com.google.common.collect.MapMaker;
-import com.google.common.math.IntMath;
-
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import ic2.api.item.ElectricItem;
-import ic2.api.item.IElectricItem;
 import ic2.core.IC2;
 
 public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
@@ -34,8 +27,6 @@ public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
     private static final ArmorMaterial HAT_MATERIAL = EnumHelper
         .addArmorMaterial("COMPACTSOLARS_SOLAR_HAT", 0, new int[] { 0, 0, 0, 0 }, 0);
     private static final Random random = new Random();
-    private static final Map<EntityPlayer, ItemSolarHat.PlayerState> playerState = new MapMaker().weakKeys()
-        .makeMap();
 
     private final CompactSolarType type;
 
@@ -66,44 +57,20 @@ public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
         int xCoord = MathHelper.floor_double(player.posX);
         int yCoord = MathHelper.floor_double(player.posY);
         int zCoord = MathHelper.floor_double(player.posZ);
-
-        ItemSolarHat.PlayerState state = playerState.get(player);
-        if (state == null) {
-            state = new ItemSolarHat.PlayerState();
-            playerState.put(player, state);
+        if (!SolarMath.isSunVisible(worldObj, xCoord, yCoord, zCoord)) {
+            return;
         }
 
-        long now = worldObj.getTotalWorldTime();
-        long elapsed = Math.max(0L, now - state.lastTick);
-        state.lastTick = now;
-
-        if (SolarMath.isSunVisible(worldObj, xCoord, yCoord, zCoord)) {
-            double available = this.type.getOutput();
-
-            for (ItemStack is : player.inventory.armorInventory) {
-                if (is != itemStack && is != null && is.getItem() instanceof IElectricItem) {
-                    available -= ElectricItem.manager.charge(is, available, this.type.getTier(), false, false);
-                }
-            }
-
-            if (available <= 0.0D) {
-                state.buildUp += IntMath.pow(2, this.type.ordinal());
-            } else {
-                state.buildUp = Math.max(state.buildUp - elapsed, 0L);
-            }
-
-            int dose = IntMath.pow(10, this.type.ordinal()) * 5;
-            if (state.buildUp > dose) {
-                player.addPotionEffect(new PotionEffect(Potion.confusion.id, dose >> 2, 0));
-                state.buildUp -= dose;
-            }
-        } else {
-            state.buildUp = Math.max(state.buildUp - elapsed, 0L);
+        ItemStack chest = player.inventory.armorInventory[2];
+        if (chest == null) {
+            return;
         }
-    }
 
-    public static void clearRaining() {
-        playerState.clear();
+        double available = this.type.getOutput();
+        double used = ElectricItem.manager.charge(chest, available, Integer.MAX_VALUE, true, false);
+        if (used > 0.0D) {
+            player.openContainer.detectAndSendChanges();
+        }
     }
 
     @Override
@@ -137,12 +104,6 @@ public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
         list.add(StatCollector.translateToLocal("ic2.item.tooltip.PowerTier") + " " + this.type.getTier());
         String descKey = "item.compactsolars:solarHat.desc";
         String description = StatCollector.translateToLocal(descKey);
-        list.add(description.equals(descKey) ? "Charges equipped electric armor while in sunlight." : description);
-    }
-
-    private static class PlayerState {
-
-        private long buildUp;
-        private long lastTick;
+        list.add(description.equals(descKey) ? "Charges the chestplate while in sunlight." : description);
     }
 }

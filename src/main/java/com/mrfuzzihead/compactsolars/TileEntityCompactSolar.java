@@ -22,6 +22,8 @@ import ic2.api.tile.IWrenchable;
 public class TileEntityCompactSolar extends TileEntity implements IInventory, IWrenchable, IEnergySource {
 
     private static final int SUN_UPDATE_INTERVAL = 128;
+    /** IC2's solar generator hardcodes its charge slot to LV, independent of the output tier. */
+    private static final int CHARGE_SLOT_TIER = 1;
     private static final String NBT_TIER = "Tier";
     private static final String NBT_ENERGY = "Energy";
     private static final String LEGACY_ENERGY = "IC2BasicSource";
@@ -154,7 +156,7 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
             return false;
         }
 
-        double used = ElectricItem.manager.charge(stack, this.energyStored, this.tier, false, false);
+        double used = ElectricItem.manager.charge(stack, this.energyStored, CHARGE_SLOT_TIER, false, false);
         if (used > 0.0D) {
             this.energyStored -= used;
             return true;
@@ -334,7 +336,7 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
      */
     public boolean isValidCharge(ItemStack itemstack) {
         return itemstack != null && itemstack.getItem() instanceof IElectricItem
-            && ElectricItem.manager.charge(itemstack, Double.POSITIVE_INFINITY, this.getTier(), true, true) > 0.0D;
+            && ElectricItem.manager.charge(itemstack, Double.POSITIVE_INFINITY, CHARGE_SLOT_TIER, true, true) > 0.0D;
     }
 
     public ItemStack getStackInSlotOnClosing(int var1) {

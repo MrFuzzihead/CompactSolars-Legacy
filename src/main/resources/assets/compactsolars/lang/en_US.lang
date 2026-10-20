@@ -6,4 +6,4 @@ item.compactsolars:solarHatHV.name=High Voltage Solar Hat
 item.compactsolars:solarHatMV.name=Medium Voltage Solar Hat
 item.compactsolars:solarHatLV.name=Low Voltage Solar Hat
 
-item.compactsolars:solarHat.desc=Charges equipped electric armor while in sunlight.
+item.compactsolars:solarHat.desc=Charges the chestplate while in sunlight.

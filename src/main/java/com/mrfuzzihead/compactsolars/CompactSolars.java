@@ -13,7 +13,6 @@ import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import ic2.core.init.MainConfig;
@@ -133,8 +132,4 @@ public class CompactSolars {
         CompactSolarRecipes.register(compactSolarBlock);
     }
 
-    @EventHandler
-    public void resetMap(FMLServerStoppingEvent evt) {
-        ItemSolarHat.clearRaining();
-    }
 }
