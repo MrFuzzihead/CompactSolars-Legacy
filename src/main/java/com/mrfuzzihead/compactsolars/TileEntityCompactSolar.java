@@ -1,3 +1,18 @@
+/*
+ * CompactSolars-Legacy
+ * Copyright (c) 2026 Duncan Campbell
+ * Derived from CompactSolars, Copyright (c) 2012 cpw and contributors.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.mrfuzzihead.compactsolars;
 
 import java.util.Random;
@@ -8,71 +23,179 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.ForgeDirection;
 
-import ic2.api.energy.prefab.BasicSource;
+import ic2.api.energy.EnergyNet;
+import ic2.api.energy.event.EnergyTileLoadEvent;
+import ic2.api.energy.event.EnergyTileUnloadEvent;
+import ic2.api.energy.tile.IEnergySource;
+import ic2.api.item.ElectricItem;
 import ic2.api.item.IElectricItem;
 import ic2.api.tile.IWrenchable;
 
-public class TileEntityCompactSolar extends TileEntity implements IInventory, IWrenchable {
+public class TileEntityCompactSolar extends TileEntity implements IInventory, IWrenchable, IEnergySource {
 
-    private BasicSource energySource;
-    private static Random random = new Random();
+    private static final int SUN_UPDATE_INTERVAL = 128;
+    private static final String NBT_TIER = "Tier";
+    private static final String NBT_ENERGY = "Energy";
+    private static final String LEGACY_ENERGY = "IC2BasicSource";
+
+    private static final Random random = new Random();
+
     private CompactSolarType type;
     private ItemStack[] inventory;
     private boolean initialized;
     public boolean theSunIsVisible;
     private int tick;
-    private boolean canRain;
     private boolean noSunlight;
+
+    private double capacity;
+    private int tier;
+    private double power;
+    private double energyStored;
+    private boolean addedToEnet;
 
     public TileEntityCompactSolar() {
         this(CompactSolarType.LV);
     }
 
     public TileEntityCompactSolar(CompactSolarType type) {
-        this.type = type;
         this.inventory = new ItemStack[1];
-        this.tick = random.nextInt(64);
-        this.energySource = new BasicSource(this, type.maxStorage, type.ordinal() + 1);
+        this.tick = random.nextInt(SUN_UPDATE_INTERVAL);
+        this.applyType(type);
     }
 
+    private void applyType(CompactSolarType type) {
+        this.type = type;
+        this.capacity = type.panelArrayStorage;
+        this.tier = type.getTier();
+        this.power = EnergyNet.instance != null ? EnergyNet.instance.getPowerFromTier(this.tier)
+            : type.outputPacketSize;
+    }
+
+    @Override
+    public void validate() {
+        super.validate();
+        if (this.worldObj != null && !this.worldObj.isRemote && !this.addedToEnet) {
+            MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
+            this.addedToEnet = true;
+        }
+    }
+
+    @Override
+    public void invalidate() {
+        this.unloadFromEnet();
+        super.invalidate();
+    }
+
+    @Override
+    public void onChunkUnload() {
+        this.unloadFromEnet();
+        super.onChunkUnload();
+    }
+
+    private void unloadFromEnet() {
+        if (this.addedToEnet) {
+            MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(this));
+            this.addedToEnet = false;
+        }
+    }
+
+    @Override
     public void updateEntity() {
-        this.energySource.onUpdateEntity();
-        if (!this.initialized && this.worldObj != null) {
-            this.canRain = this.worldObj.getWorldChunkManager()
-                .getBiomeGenAt(this.xCoord, this.zCoord)
-                .getIntRainfall() > 0;
+        if (this.worldObj == null || this.worldObj.isRemote) {
+            return;
+        }
+
+        if (!this.initialized) {
             this.noSunlight = this.worldObj.provider.hasNoSky;
+            if (this.noSunlight) {
+                this.theSunIsVisible = false;
+            } else {
+                this.updateSunState();
+            }
             this.initialized = true;
         }
 
         if (!this.noSunlight) {
             if (this.tick-- == 0) {
                 this.updateSunState();
-                this.tick = 64;
+                this.tick = SUN_UPDATE_INTERVAL;
             }
 
-            int energyProduction = 0;
-            if (this.theSunIsVisible
-                && (CompactSolars.productionRate == 1 || random.nextInt(CompactSolars.productionRate) == 0)) {
-                energyProduction = this.generateEnergy();
+            double energyProduction = 0.0D;
+            if (this.theSunIsVisible) {
+                int interval = CompactSolars.sanitizeScaleFactor(CompactSolars.productionRate);
+                if (interval == 1 || random.nextInt(interval) == 0) {
+                    energyProduction = this.generateEnergy();
+                }
             }
 
-            this.energySource.addEnergy(energyProduction);
+            this.addEnergy(energyProduction);
             if (this.inventory[0] != null && this.inventory[0].getItem() instanceof IElectricItem) {
-                this.energySource.charge(this.inventory[0]);
+                if (this.charge(this.inventory[0])) {
+                    this.markDirty();
+                }
             }
         }
     }
 
     private void updateSunState() {
-        boolean isRaining = this.canRain && (this.worldObj.isRaining() || this.worldObj.isThundering());
-        this.theSunIsVisible = this.worldObj.isDaytime() && !isRaining
-            && this.worldObj.canBlockSeeTheSky(this.xCoord, this.yCoord + 1, this.zCoord);
+        this.theSunIsVisible = SolarMath.isSunVisible(this.worldObj, this.xCoord, this.yCoord, this.zCoord);
     }
 
-    private int generateEnergy() {
-        return this.type.getOutput();
+    private double generateEnergy() {
+        int skyLight = SolarMath.skyLight(this.worldObj, this.xCoord, this.zCoord);
+        return this.type.panels * SolarMath.perPanelOutput(skyLight, CompactSolars.solarBaseValue);
+    }
+
+    private double addEnergy(double amount) {
+        if (amount <= 0.0D) {
+            return 0.0D;
+        }
+
+        double accepted = Math.min(amount, this.capacity - this.energyStored);
+        if (accepted <= 0.0D) {
+            return 0.0D;
+        }
+
+        this.energyStored += accepted;
+        return accepted;
+    }
+
+    private boolean charge(ItemStack stack) {
+        if (stack == null || !(stack.getItem() instanceof IElectricItem)) {
+            return false;
+        }
+
+        double used = ElectricItem.manager.charge(stack, this.energyStored, this.getTier(), false, false);
+        if (used > 0.0D) {
+            this.energyStored -= used;
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public double getOfferedEnergy() {
+        return Math.min(this.energyStored, this.power);
+    }
+
+    @Override
+    public void drawEnergy(double amount) {
+        this.energyStored = Math.max(0.0D, this.energyStored - amount);
+    }
+
+    @Override
+    public int getSourceTier() {
+        return this.tier;
+    }
+
+    @Override
+    public boolean emitsEnergyTo(TileEntity receiver, ForgeDirection direction) {
+        return true;
     }
 
     public ItemStack[] getContents() {
@@ -153,11 +276,14 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
     }
 
     public float getWrenchDropRate() {
-        return 1.0F;
+        return CompactSolars.wrenchParity ? 0.9F : 1.0F;
     }
 
+    @Override
     public void writeToNBT(NBTTagCompound nbttagcompound) {
         super.writeToNBT(nbttagcompound);
+        nbttagcompound.setByte(NBT_TIER, (byte) this.type.ordinal());
+        nbttagcompound.setDouble(NBT_ENERGY, this.energyStored);
         NBTTagList nbttaglist = new NBTTagList();
 
         for (int i = 0; i < this.inventory.length; i++) {
@@ -170,12 +296,13 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         }
 
         nbttagcompound.setTag("Items", nbttaglist);
-        this.energySource.onWriteToNbt(nbttagcompound);
     }
 
+    @Override
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
-        this.energySource.onReadFromNbt(nbttagcompound);
+        this.applyType(readType(nbttagcompound));
+        this.energyStored = Math.min(this.capacity, readEnergy(nbttagcompound));
         NBTTagList nbttaglist = nbttagcompound.getTagList("Items", 9);
         this.inventory = new ItemStack[this.getSizeInventory()];
 
@@ -188,17 +315,41 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         }
     }
 
+    private static CompactSolarType readType(NBTTagCompound nbttagcompound) {
+        if (nbttagcompound.hasKey(NBT_TIER)) {
+            return CompactSolarType.byMetadata(nbttagcompound.getByte(NBT_TIER) & 255);
+        }
+        return CompactSolarType.fromLegacyTileEntityId(nbttagcompound.getString("id"));
+    }
+
+    private static double readEnergy(NBTTagCompound nbttagcompound) {
+        if (nbttagcompound.hasKey(NBT_ENERGY)) {
+            return Math.max(0.0D, nbttagcompound.getDouble(NBT_ENERGY));
+        }
+        if (nbttagcompound.hasKey(LEGACY_ENERGY)) {
+            return Math.max(
+                0.0D,
+                nbttagcompound.getCompoundTag(LEGACY_ENERGY)
+                    .getDouble("energy"));
+        }
+        return 0.0D;
+    }
+
     public CompactSolarType getType() {
         return this.type;
     }
 
-    public void onChunkUnload() {
-        this.energySource.onChunkUnload();
+    public int getTier() {
+        return this.tier;
     }
 
-    public void invalidate() {
-        this.energySource.onInvalidate();
-        super.invalidate();
+    /**
+     * Mirrors IC2's charge-slot validation: the item must be electric, accept the array's tier, and
+     * have room for at least some charge. The simulated call ignores the item's transfer limit.
+     */
+    public boolean isValidCharge(ItemStack itemstack) {
+        return itemstack != null && itemstack.getItem() instanceof IElectricItem
+            && ElectricItem.manager.charge(itemstack, Double.POSITIVE_INFINITY, this.getTier(), true, true) > 0.0D;
     }
 
     public ItemStack getStackInSlotOnClosing(int var1) {
@@ -223,7 +374,8 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         return false;
     }
 
-    public boolean isItemValidForSlot(int i, ItemStack itemstack) {
-        return itemstack != null && itemstack.getItem() instanceof IElectricItem;
+    @Override
+    public boolean isItemValidForSlot(int slot, ItemStack itemstack) {
+        return slot == 0 && this.isValidCharge(itemstack);
     }
 }

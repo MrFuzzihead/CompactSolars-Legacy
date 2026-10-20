@@ -1,5 +1,21 @@
+/*
+ * CompactSolars-Legacy
+ * Copyright (c) 2026 Duncan Campbell
+ * Derived from CompactSolars, Copyright (c) 2012 cpw and contributors.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.mrfuzzihead.compactsolars;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -19,6 +35,8 @@ import net.minecraft.world.World;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import ic2.api.item.IC2Items;
+import ic2.core.IC2;
 
 public class BlockCompactSolar extends BlockContainer {
 
@@ -30,20 +48,27 @@ public class BlockCompactSolar extends BlockContainer {
         super(Material.iron);
         this.setBlockName("CompactSolar");
         this.setHardness(3.0F);
+        this.setStepSound(Block.soundTypeMetal);
         this.random = new Random();
-        this.setCreativeTab(CreativeTabs.tabRedstone);
+        this.setCreativeTab(IC2.tabIC2);
     }
 
-    public TileEntity createNewTileEntity(World var1, int i) {
-        return null;
-    }
-
-    public TileEntity createTileEntity(World world, int metadata) {
+    public TileEntity createNewTileEntity(World world, int metadata) {
         return CompactSolarType.makeEntity(metadata);
     }
 
-    public IIcon getIcon(int i, int j) {
-        return j >= CompactSolarType.values().length ? null : this.textures[j][i > 2 ? 2 : i];
+    public TileEntity createTileEntity(World world, int metadata) {
+        return createNewTileEntity(world, metadata);
+    }
+
+    public IIcon getIcon(int side, int metadata) {
+        if (this.textures == null) {
+            return null;
+        }
+
+        int meta = CompactSolarType.clampMetadata(metadata);
+        int face = side > 2 ? 2 : Math.max(side, 0);
+        return this.textures[meta][face];
     }
 
     public boolean onBlockActivated(World world, int i, int j, int k, EntityPlayer player, int s, float f1, float f2,
@@ -70,14 +95,29 @@ public class BlockCompactSolar extends BlockContainer {
         }
     }
 
-    public int damageDropped(int i) {
-        return i;
+    @Override
+    public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
+        ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+        if (CompactSolars.wrenchParity) {
+            ItemStack casing = IC2Items.getItem("machine");
+            if (casing != null) {
+                drops.add(casing.copy());
+                return drops;
+            }
+        }
+
+        drops.add(new ItemStack(this, 1, CompactSolarType.clampMetadata(metadata)));
+        return drops;
+    }
+
+    public int damageDropped(int metadata) {
+        return CompactSolarType.clampMetadata(metadata);
     }
 
     public void breakBlock(World world, int i, int j, int k, Block par5, int par6) {
-        TileEntityCompactSolar tileSolar = (TileEntityCompactSolar) world.getTileEntity(i, j, k);
-        if (tileSolar != null) {
-            this.dropContent(0, tileSolar, world);
+        TileEntity tile = world.getTileEntity(i, j, k);
+        if (tile instanceof TileEntityCompactSolar) {
+            this.dropContent(0, (TileEntityCompactSolar) tile, world);
         }
 
         super.breakBlock(world, i, j, k, par5, par6);

@@ -1,77 +1,108 @@
+/*
+ * CompactSolars-Legacy
+ * Copyright (c) 2026 Duncan Campbell
+ * Derived from CompactSolars, Copyright (c) 2012 cpw and contributors.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.mrfuzzihead.compactsolars;
 
-import net.minecraft.init.Items;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 
-import com.google.common.base.Throwables;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import cpw.mods.fml.common.registry.GameRegistry;
-import ic2.api.item.IC2Items;
 
 public enum CompactSolarType {
 
-    LV(8, 32, "Low Voltage Solar Array", "lvTransformer", TileEntityCompactSolar.class, "lvHat"),
-    MV(64, 128, "Medium Voltage Solar Array", "mvTransformer", TileEntityCompactSolarMV.class, "mvHat"),
-    HV(512, 512, "High Voltage Solar Array", "hvTransformer", TileEntityCompactSolarHV.class, "hvHat");
+    LV(8, 32, "lvTransformer", "lvHat"),
+    MV(64, 128, "mvTransformer", "mvHat"),
+    HV(512, 512, "hvTransformer", "hvHat");
 
-    private int output;
-    public Class<? extends TileEntityCompactSolar> clazz;
-    public String friendlyName;
-    public String transformerName;
+    private static final CompactSolarType[] VALUES = values();
+    private static final Logger LOG = LogManager.getLogger("CompactSolars");
+
+    private final int output;
+    private final String transformerName;
     public final ResourceLocation hatTexture;
     public final String hatName;
     private ItemSolarHat item;
     public final ResourceLocation hatItemTexture;
     public final int outputPacketSize;
-    public final int maxStorage;
+    public final int panels;
+    public final int panelArrayStorage;
+    private final String unlocalizedName;
 
-    private CompactSolarType(int output, int outputPacketSize, String friendlyName, String transformerName,
-        Class<? extends TileEntityCompactSolar> clazz, String hatTexture) {
+    private CompactSolarType(int output, int outputPacketSize, String transformerName, String hatTexture) {
         this.output = output;
         this.outputPacketSize = outputPacketSize;
-        this.friendlyName = friendlyName;
         this.transformerName = transformerName;
-        this.clazz = clazz;
         this.hatName = "solarHat" + this.name();
         this.hatTexture = new ResourceLocation("compactsolars", "textures/armor/" + hatTexture + ".png");
         this.hatItemTexture = new ResourceLocation("compactsolars", hatTexture);
-        this.maxStorage = outputPacketSize << 1;
+        this.panels = output;
+        this.panelArrayStorage = output * 2;
+        this.unlocalizedName = "tile.compactsolars:" + this.name() + "_block";
     }
 
-    public static void generateRecipes(BlockCompactSolar block) {
-        ItemStack solar = IC2Items.getItem("solarPanel");
-        ItemStack parent = solar;
-
-        for (CompactSolarType typ : values()) {
-            ItemStack targ = new ItemStack(block, 1, typ.ordinal());
-            ItemStack transformer = IC2Items.getItem(typ.transformerName);
-            addRecipe(targ, "SSS", "SXS", "SSS", 'S', parent, 'X', transformer);
-            parent = targ;
-        }
+    /** Returns the valid metadata for a tier, clamping bad values to LV. */
+    public static int clampMetadata(int metadata) {
+        return metadata >= 0 && metadata < VALUES.length ? metadata : 0;
     }
 
-    private static void addRecipe(ItemStack target, Object... args) {
-        GameRegistry.addRecipe(target, args);
+    /** Returns the tier for a metadata value, with a safe LV fallback. */
+    public static CompactSolarType byMetadata(int metadata) {
+        return VALUES[clampMetadata(metadata)];
     }
 
     public int getOutput() {
         return this.output;
     }
 
-    public static TileEntityCompactSolar makeEntity(int metadata) {
-        int solartype = metadata;
-
-        try {
-            return values()[solartype].clazz.newInstance();
-        } catch (Exception var3) {
-            throw Throwables.propagate(var3);
-        }
+    public String getTransformerName() {
+        return this.transformerName;
     }
 
-    public int getTextureRow() {
-        return this.ordinal();
+    public int getTier() {
+        return this.ordinal() + 1;
+    }
+
+    public String getUnlocalizedName() {
+        return this.unlocalizedName;
+    }
+
+    public String transformerOreName() {
+        return "transformer" + this.name();
+    }
+
+    public static TileEntityCompactSolar makeEntity(int metadata) {
+        if (metadata < 0 || metadata >= VALUES.length) {
+            LOG.warn("Invalid CompactSolars metadata {}; falling back to LV.", metadata);
+        }
+
+        return new TileEntityCompactSolar(byMetadata(metadata));
+    }
+
+    /** Maps the old per-tier tile entity IDs to the unified tile entity's tier. */
+    public static CompactSolarType fromLegacyTileEntityId(String id) {
+        if (id != null) {
+            for (CompactSolarType typ : VALUES) {
+                if (typ.tileEntityName()
+                    .equals(id)) {
+                    return typ;
+                }
+            }
+        }
+        return LV;
     }
 
     public String tileEntityName() {
@@ -84,18 +115,8 @@ public enum CompactSolarType {
         return this.item;
     }
 
-    public static void buildHats() {
-        for (CompactSolarType typ : values()) {
-            typ.buildHat();
-        }
+    public ItemSolarHat getHatItem() {
+        return this.item;
     }
 
-    public static void generateHatRecipes(BlockCompactSolar block) {
-        Item ironHat = Items.iron_helmet;
-
-        for (CompactSolarType typ : values()) {
-            ItemStack solarBlock = new ItemStack(block, 0, typ.ordinal());
-            GameRegistry.addShapelessRecipe(new ItemStack(typ.item), new Object[] { solarBlock, ironHat });
-        }
-    }
 }

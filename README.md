@@ -1,133 +1,159 @@
-# IC2Tweaks
+# CompactSolars-Legacy
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.7.10-62a34a)](https://minecraft.wiki/w/Java_Edition_1.7.10)
-[![Forge](https://img.shields.io/badge/Forge-10.13.4.1614-1e2b4f)](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.7.10.html)
-[![IC2](https://img.shields.io/badge/IC2-2.2.828--experimental-blue)](https://www.curseforge.com/minecraft/mc-mods/industrial-craft)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-
-**IC2Tweaks** is a standalone [IndustrialCraft²](https://www.curseforge.com/minecraft/mc-mods/industrial-craft)
-core-tweak mod for **Minecraft 1.7.10 (Forge)**. It is deliberately separate from machine-addon mods so
-that changes to IC2 itself can be shipped and versioned independently.
-
-## Features
-
-- **Global energy-net overload system** (on by default): an IC2 Experimental 1.12.2 style
-  voltage/packet overload layer for **every** IC2 machine and cable, not just one addon's machines —
-  over-voltage machines explode, overloaded cables melt, and nearby entities take shock damage.
-  While enabled it forces IC2's linear transfer model (ignoring `IC2.ini`), which is the model that
-  carries physical voltage/current data. Cable items also gain an energy-loss tooltip line.
-  See [Configuration](#configuration).
-- **1.12.2-style cable rules**: bare cables shock above their graded thresholds (tin 8 EU/t;
-  copper/gold/HV 32 EU/t), while insulated cables are shock-safe unless they actually overload and melt.
-  TEs can opt out of or resize an over-voltage blast via `com.mrfuzzihead.ic2tweaks.api.IOverloadHandler`
-  / `IExplosionPowerOverride`.
+Compact Solar Arrays for **Minecraft 1.7.10 (Forge)**. This is an add-on for
+[IndustrialCraft²](https://www.curseforge.com/minecraft/mc-mods/industrial-craft) that condenses many
+IC2 solar panels into a single block.
 
 ## Requirements
 
-| Dependency | Version | Notes |
-| ---------- | ------- | ----- |
-| Minecraft | 1.7.10 | — |
-| Minecraft Forge | 10.13.4.1614 | [Download](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.7.10.html) |
-| [IndustrialCraft²](https://www.curseforge.com/minecraft/mc-mods/industrial-craft) | 2.2.828-experimental | Required at runtime |
-| [UniMixins](https://github.com/GTNewHorizons/UniMixins) | any GTNH build | Required at runtime; pulled in automatically as a dependency |
+| Dependency | Version |
+| --- | --- |
+| Minecraft | 1.7.10 |
+| Minecraft Forge | 10.13.4.1614 (or compatible 1.7.10 Forge) |
+| IndustrialCraft² | 2.2.828-experimental or newer |
+
+## Solar arrays
+
+| Tier | Equivalent IC2 panels | Output at full sun | IC2 tier | Packet power | Buffer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| LV | 8 | 8 EU/t | 1 | 32 EU | 16 EU |
+| MV | 64 | 64 EU/t | 2 | 128 EU | 128 EU |
+| HV | 512 | 512 EU/t | 3 | 512 EU | 1024 EU |
+
+The buffer is exactly two panels' worth of storage (16/128/1024 EU).
+
+Output now follows IC2's solar rules: it scales linearly with `skyLight / 15` and uses IC2's
+`balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512 EU/t.
+
+The charge slot matches the array's output tier: LV charges LV, MV charges up to MV, and HV charges
+up to HV, like IC2's BatBox/CESU/MFE/MFSU storage blocks. IC2's solar panel's own slot happens to be
+tier 1 because its output is tier 1; CompactSolars intentionally exposes the higher array tier.
+
+## Solar hats
+
+Each tier also has a solar hat that charges electric armor while the player is in sunlight:
+
+| Hat | Charge rate | Tier |
+| --- | ---: | ---: |
+| LV Solar Hat | 8 EU/t | 1 |
+| MV Solar Hat | 64 EU/t | 2 |
+| HV Solar Hat | 512 EU/t | 3 |
+
+Each hat charges **only the chestplate**, accepts **any tier** (`Integer.MAX_VALUE`), ignores the
+armor's transfer limit, and has **no confusion mechanic**. It keeps the array-rate output
+(8/64/512 EU/t) and syncs the player's container after a successful charge.
+
+IC2's own solar helmet uses the same chest-only/any-tier/ignore-transfer/no-confusion model, but
+charges at **1 EU/t** regardless of the panel count and has no useful tooltip. CompactSolars keeps
+the array-rate output, the tooltip, and the per-tier textures.
+
+Hats use a single shared, infinite-durability armor material. Their tooltip shows the charge rate
+(`Power Output: X EU/t max`), the power tier, and a short description.
+
+## Presentation
+
+- **Array tooltip:** matches IC2's solar panel format, e.g. `Power Output: 8 EU/t max`, using
+  IC2's own localization keys.
+- **Hat tooltip:** shows the charge rate, `Power Tier: n`, and a short description.
+- **GUI:** the array title and inventory label are localized.
+- **Creative menu:** arrays and solar hats are listed in IC2's creative tab.
+- **Sound:** uses IC2's metal block step/place/break sound. IC2's solar panel has no ambient
+  generator loop, so there is no continuous hum.
 
 ## Configuration
 
-`config/ic2tweaks.cfg`, `energynet` category (global — applies to all IC2 machines and cables):
+`config/CompactSolars.cfg`:
 
 | Option | Default | Description |
-| ------ | ------- | ----------- |
-| `enableEnetOverload` | `true` | Master switch. Legacy mode forces IC2's `misc/useLinearTransferModel` to `true`; packet mode replaces the distribution with the 1.12.2 packet calculator instead |
-| `enablePacketModel` | `false` | Experimental 1.12.2 packet/path calculator. When on, melt/shock/explosion checks use each path's own packet (no aggregation), the legacy per-node passes are disabled, and the `useLinearTransferModel` override is skipped. Requires a restart |
-| `packetModelRoundLossDown` | `false` | Packet model only: floor each path's accumulated loss, mirroring IC2 1.12.2's `misc/roundEnetLoss` |
-| `packetModelTierVoltage` | `false` | Packet model only: report 1.12.2's raw tier index from `NodeStats.getVoltage()` instead of the rated tier voltage |
-| `enableEnetExplosions` | `true` | Machines explode when they accept a packet above their tier's voltage |
-| `enableEnetCableMeltdown` | `true` | Cables melt when their carried energy exceeds the conductor breakdown energy |
-| `enableEnetShocks` | `true` | Living entities near an overloaded cable take electric shock damage |
-| `enableDemandCappedPackets` | `false` | Cap each injection at the sink's remaining demand (IC2 1.12.2 packet sizing). Off because it changes how much energy every machine receives |
+| --- | ---: | --- |
+| `general.scaleFactor` | `1` | Generation interval. `1` generates every tick; `2` generates on average every other tick, etc. Values below `1` are clamped to `1`. This does not change the per-generation EU amount. |
+| `general.solarBaseValue` | IC2's `balance/energy/generator/solar` (usually `1.0`) | EU/t per panel at full sky light (15). Set to `0` to disable generation. Negative or NaN values fall back to `1.0`. |
+| `general.wrenchParity` | `true` | IC2-style wrench behavior: breaking without a wrench drops a Basic Machine Casing, and a wrench has a 90% chance to preserve the tier. Set `false` for the old always-drop behavior. |
 
-Because the overload system changes global IC2 behaviour, it is **on by default**; set
-`enableEnetOverload=false` to disable it and restore stock IC2 behaviour. The default **legacy** model
-enables IC2's experimental lossy model; the opt-in **packet** model (`enablePacketModel=true`, restart
-required) replaces the per-node distribution with the 1.12.2 path/packet calculator, so fault checks use
-each path's packet instead of sums across sources (the gap-1 fix) and the linear model is left alone.
+## Wrench behavior
 
-Known limitations (a mix of pre-existing IC2 behaviour and documented port divergences; see
-`ENET_OVERLOAD_ANALYSIS.md` gaps 10, 13 and 1):
+With `wrenchParity=true` (the default):
 
-- IC2's linear model loses energy on every link, including a direct machine-to-machine connection. A
-  BatBox feeding another BatBox loses about 1.2% of the transferred energy (the link's 0.4 Ω inner
-  loss), and a source that drops below its output packet size (32 EU/t for a BatBox) stops emitting,
-  stranding the remainder.
-- The linear model derives a sink's resistance from its tier, so machines with many transformer
-  upgrades (roughly 6+ on an MFSU) draw almost no power. This is legacy-only; the packet model does not
-  derive sink resistance from tier.
-- The packet model is experimental: `NodeStats` values are packet-based, and `getVoltage()` reports rated
-  volts unless `packetModelTierVoltage=true`; the mixins must be selected at startup (config change
-  requires a restart).
-- Cable shock sensitivity: bare cables are graded (tin 8, copper/gold/HV 32) and insulated cables are
-  shock-safe at any load — they only arc while they overload and melt. This differs from IC2 1.12.2's
-  per-layer table because 1.7.10's 2x/3x insulated gold/HV items are remapped to a single layer on
-  placement (`TileEntityCable.onLoaded()`), so gold/HV could never be insulated past 128 there.
-- Overload checks use 1.7.10's **per-node aggregate** values, not 1.12.2's per-source packet sizes. At a
-  junction or with several sources feeding one cable, the cable can trip earlier than it would in 1.12.2,
-  and two same-tier sources can trip the machine-explosion check. This is the remaining structural
-  divergence; a packet-based calculator is planned separately.
-- Insulated tin reports a conduction loss of 0.025 EU/block in IC2 1.7.10 (the same as glass fibre and
-  lower than bare tin); the tooltip shows that value verbatim so it matches the simulation.
+- Breaking an array without a wrench drops a **Basic Machine Casing**, even for MV/HV. This is the
+  IC2-style machine drop for a machine broken without a wrench.
+- A wrench roll has a **90%** chance to preserve the original tier. On failure, the normal Basic
+  Machine Casing drop is used.
+- IC2's electric wrench lossless mode can force a successful wrench operation, matching IC2's
+  behavior.
+- Set `wrenchParity=false` to restore the old behavior: every break drops the exact tier.
 
-## API
+## Recipes
 
-Mods whose machines should survive (or shrink) an over-voltage packet can implement either interface on
-their tile entity:
+Array recipes are shaped and use eight of the previous tier:
 
-- `com.mrfuzzihead.ic2tweaks.api.IOverloadHandler` — `boolean onOverload(int tier)`; return `true` to
-  cancel the default explosion.
-- `com.mrfuzzihead.ic2tweaks.api.IExplosionPowerOverride` — `boolean shouldExplode()` and
-  `float getExplosionPower(int tier, float defaultPower)`.
+- **LV Solar Array:** 8 IC2 solar panels + 1 LV transformer
+- **MV Solar Array:** 8 LV Solar Arrays + 1 MV transformer
+- **HV Solar Array:** 8 MV Solar Arrays + 1 HV transformer
 
-Both mirror IC2 Experimental 1.12.2's interfaces of the same name.
+Hat recipes are shapeless:
 
-## Diagnostics
+- **Solar Hat:** 1 matching Solar Array + 1 iron helmet
 
-Run `/ic2tweaks status` in-game to confirm the feature is live. It reports:
+### OreDictionary support
 
-- `mixin active` — whether the energy-net mixins were actually applied to IC2
-- `enableEnetOverload` — the master switch
-- `energy model` — `legacy per-node` or `packet (1.12.2)`; packet mode also prints its round-loss/tier-voltage options
-- `useLinearTransferModel` and the raw `IC2.ini` value — proves the override forced the linear model
-- the `enableEnet*` sub-toggles
-- how many conductors are registered in the current world
+The recipes use Forge's OreDictionary where possible, so packs and other mods can substitute
+alternatives:
 
-## Building from source
+| Ore name | Registered default |
+| --- | --- |
+| `solarPanel` | IC2 solar panel |
+| `transformerLV` | IC2 LV transformer |
+| `transformerMV` | IC2 MV transformer |
+| `transformerHV` | IC2 HV transformer |
+| `helmetIron` | vanilla iron helmet |
 
-This project uses the [GTNewHorizons](https://github.com/GTNewHorizons) 1.7.10 Gradle toolchain. The
-correct JDK is provisioned automatically by Gradle — no manual Java setup required.
+If an IC2 input is missing, recipe registration logs an error instead of crashing the game. The ore
+entries above are registered by CompactSolars and can be extended by other mods or pack scripts.
 
-### Canary harness (development)
+## IC2 parity status
 
-With packet mode enabled, run:
+The array generation rules now match IC2's solar generator:
 
-```
-JAVA_TOOL_OPTIONS="-Dic2tweaks.canary=true" ./gradlew runServer
-```
+- sun predicate: `skyLight > 4`, no-sky check, `canBlockSeeTheSky`, desert exception, rain/thunder
+  check;
+- linear `skyLight / 15` output scaling;
+- IC2 `balance/energy/generator/solar` value by default;
+- 128-tick sun refresh and an immediate refresh on load.
 
-The harness builds IC2 test rigs at `y=160`, logs `[canary] PASS/FAIL`, and stops the server. It is
-inactive unless the system property is set and is not part of normal gameplay.
+Remaining known differences:
+
+- Hats use the array-rate output (8/64/512 EU/t) rather than IC2's flat 1 EU/t; the chest-only,
+  any-tier, ignore-transfer, and no-confusion behavior now matches IC2.
+
+See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
+
+## World compatibility
+
+All three tiers now share one tile entity class. The tier is persisted in NBT, and the old per-tier
+tile entity IDs (`CompactSolarType.LV`, `CompactSolarType.MV`, `CompactSolarType.HV`) are registered
+as aliases of the unified tile entity, so existing worlds should load their arrays at the correct
+tier. Back up a world before testing an upgrade from an older build.
+
+## Building
+
+This project uses the GTNewHorizons 1.7.10 Gradle toolchain. The correct JDK is provisioned by
+Gradle.
 
 ```bash
-git clone https://github.com/MrFuzzihead/IC2Tweaks.git
-cd IC2Tweaks
-./gradlew build        # on Windows: gradlew.bat build
+./gradlew build        # Windows: gradlew.bat build
+./gradlew test         # unit tests
+./gradlew runClient    # development client
 ```
 
-The built jars are placed in `build/libs/`. To run the unit tests or launch a development client:
-
-```bash
-./gradlew test         # on Windows: gradlew.bat test
-./gradlew runClient    # on Windows: gradlew.bat runClient
-```
+Built jars are placed in `build/libs/`.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+This project is licensed under the **GNU General Public License v3.0**. See [LICENSE](LICENSE) for the
+full text. CompactSolars-Legacy is derived from cpw's CompactSolars, which was also GPLv3.
+
+## Credits
+
+- Original CompactSolars by cpw, based on an idea by Zippinus
+- 1.7.2 update by ProgWML6
+- 1.7.10 maintenance and port by MrFuzzihead

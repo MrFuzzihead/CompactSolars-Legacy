@@ -1,6 +1,21 @@
+/*
+ * CompactSolars-Legacy
+ * Copyright (c) 2026 Duncan Campbell
+ * Derived from CompactSolars, Copyright (c) 2012 cpw and contributors.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.mrfuzzihead.compactsolars;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Random;
 
 import net.minecraft.client.renderer.texture.IIconRegister;
@@ -8,115 +23,102 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemArmor;
+import net.minecraft.item.ItemArmor.ArmorMaterial;
 import net.minecraft.item.ItemStack;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ISpecialArmor;
 import net.minecraftforge.common.util.EnumHelper;
 
-import com.google.common.collect.MapMaker;
-import com.google.common.math.IntMath;
-
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import ic2.api.item.ElectricItem;
-import ic2.api.item.IElectricItem;
+import ic2.core.IC2;
 
 public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
 
-    private static Random random = new Random();
-    private static Map<EntityPlayer, ItemSolarHat.PlayerState> playerState = new MapMaker().weakKeys()
-        .makeMap();
-    private CompactSolarType type;
+    private static final ArmorMaterial HAT_MATERIAL = EnumHelper
+        .addArmorMaterial("COMPACTSOLARS_SOLAR_HAT", 0, new int[] { 0, 0, 0, 0 }, 0);
+    private static final Random random = new Random();
+
+    private final CompactSolarType type;
 
     public ItemSolarHat(CompactSolarType type) {
-        super(EnumHelper.addArmorMaterial("COMPACTSOLARHAT", 1, new int[] { 1, 1, 1, 1 }, 1), 0, 0);
+        super(HAT_MATERIAL, 0, 0);
         this.type = type;
         this.setUnlocalizedName("compactsolars:" + type.hatName);
+        this.setMaxDamage(0);
+        this.setCreativeTab(IC2.tabIC2);
     }
 
+    @Override
     public String getArmorTexture(ItemStack stack, Entity entity, int slot, String layerType) {
         return this.type.hatTexture.toString();
     }
 
+    @Override
     public void onArmorTick(World worldObj, EntityPlayer player, ItemStack itemStack) {
-        if (!worldObj.isRemote && !worldObj.provider.hasNoSky) {
-            if (CompactSolars.productionRate == 1 || random.nextInt(CompactSolars.productionRate) == 0) {
-                int xCoord = MathHelper.floor_double(player.posX);
-                int zCoord = MathHelper.floor_double(player.posZ);
-                boolean isRaining = false;
-                if (!playerState.containsKey(player)) {
-                    playerState.put(player, new ItemSolarHat.PlayerState());
-                }
+        if (worldObj.isRemote || worldObj.provider.hasNoSky) {
+            return;
+        }
 
-                ItemSolarHat.PlayerState state = playerState.get(player);
-                if (worldObj.getTotalWorldTime() % 20L == 0L) {
-                    boolean canRain = worldObj.getWorldChunkManager()
-                        .getBiomeGenAt(xCoord, zCoord)
-                        .getIntRainfall() > 0;
-                    state.canRain = canRain;
-                }
+        int interval = CompactSolars.sanitizeScaleFactor(CompactSolars.productionRate);
+        if (interval != 1 && random.nextInt(interval) != 0) {
+            return;
+        }
 
-                isRaining = state.canRain && (worldObj.isRaining() || worldObj.isThundering());
-                boolean theSunIsVisible = worldObj.isDaytime() && !isRaining
-                    && worldObj.canBlockSeeTheSky(xCoord, MathHelper.floor_double(player.posY) + 1, zCoord);
-                if (theSunIsVisible) {
-                    int available = this.type.getOutput();
+        int xCoord = MathHelper.floor_double(player.posX);
+        int yCoord = MathHelper.floor_double(player.posY);
+        int zCoord = MathHelper.floor_double(player.posZ);
+        if (!SolarMath.isSunVisible(worldObj, xCoord, yCoord, zCoord)) {
+            return;
+        }
 
-                    for (ItemStack is : player.inventory.armorInventory) {
-                        if (is != itemStack && is != null && is.getItem() instanceof IElectricItem) {
-                            IElectricItem electricItem = (IElectricItem) is.getItem();
-                            available = (int) (available
-                                - ElectricItem.manager.charge(is, available, this.type.ordinal() + 1, false, false));
-                        }
-                    }
+        ItemStack chest = player.inventory.armorInventory[2];
+        if (chest == null) {
+            return;
+        }
 
-                    if (available <= 0) {
-                        state.buildUp = state.buildUp + IntMath.pow(2, this.type.ordinal());
-                    } else {
-                        state.buildUp = Math.max(state.buildUp - (worldObj.getTotalWorldTime() - state.lastTick), 0L);
-                    }
-
-                    state.lastTick = worldObj.getTotalWorldTime();
-                    int dose = IntMath.pow(10, this.type.ordinal()) * 5;
-                    if (state.buildUp > dose) {
-                        player.addPotionEffect(new PotionEffect(Potion.confusion.id, dose >> 2, 0));
-                        state.buildUp -= dose;
-                    }
-                }
-            }
+        double available = this.type.getOutput();
+        double used = ElectricItem.manager.charge(chest, available, Integer.MAX_VALUE, true, false);
+        if (used > 0.0D) {
+            player.openContainer.detectAndSendChanges();
         }
     }
 
-    public static void clearRaining() {
-        playerState.clear();
-    }
-
+    @Override
     public ArmorProperties getProperties(EntityLivingBase player, ItemStack armor, DamageSource source, double damage,
         int slot) {
         return new ArmorProperties(0, 0.0, 0);
     }
 
+    @Override
     public int getArmorDisplay(EntityPlayer player, ItemStack armor, int slot) {
         return 0;
     }
 
+    @Override
     public void damageArmor(EntityLivingBase entity, ItemStack stack, DamageSource source, int damage, int slot) {}
 
+    @Override
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister par1IconRegister) {
         this.itemIcon = par1IconRegister.registerIcon(this.type.hatItemTexture.toString());
     }
 
-    private class PlayerState {
-
-        boolean canRain;
-        public long buildUp;
-        public long lastTick;
-
-        private PlayerState() {}
+    @Override
+    @SuppressWarnings("unchecked")
+    public void addInformation(ItemStack itemstack, EntityPlayer player, List list, boolean advanced) {
+        list.add(
+            StatCollector.translateToLocal("ic2.item.tooltip.PowerOutput") + " "
+                + this.type.getOutput()
+                + " EU/t "
+                + StatCollector.translateToLocal("ic2.item.tooltip.max"));
+        list.add(StatCollector.translateToLocal("ic2.item.tooltip.PowerTier") + " " + this.type.getTier());
+        String descKey = "item.compactsolars:solarHat.desc";
+        String description = StatCollector.translateToLocal(descKey);
+        list.add(description.equals(descKey) ? "Charges the chestplate while in sunlight." : description);
     }
 }

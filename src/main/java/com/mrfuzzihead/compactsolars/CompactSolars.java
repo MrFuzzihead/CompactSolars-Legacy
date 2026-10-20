@@ -1,11 +1,26 @@
+/*
+ * CompactSolars-Legacy
+ * Copyright (c) 2026 Duncan Campbell
+ * Derived from CompactSolars, Copyright (c) 2012 cpw and contributors.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.mrfuzzihead.compactsolars;
 
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
@@ -13,17 +28,20 @@ import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import ic2.core.init.MainConfig;
+import ic2.core.util.ConfigUtil;
 
 @Mod(
     modid = "CompactSolars",
     name = "CompactSolars",
     version = Tags.VERSION,
     acceptedMinecraftVersions = "1.7.10",
-    dependencies = "required-after:Forge@[10.12,);required-after:IC2@[2.1,)")
+    dependencies = "required-after:IC2")
 public class CompactSolars {
+
+    private static final Logger LOG = LogManager.getLogger("CompactSolars");
 
     @SidedProxy(
         clientSide = "com.mrfuzzihead.compactsolars.client.ClientProxy",
@@ -31,6 +49,8 @@ public class CompactSolars {
     public static CommonProxy proxy;
     public static BlockCompactSolar compactSolarBlock;
     public static int productionRate = 1;
+    public static double solarBaseValue = 1.0D;
+    public static boolean wrenchParity = true;
     @Instance("CompactSolars")
     public static CompactSolars instance;
 
@@ -41,29 +61,81 @@ public class CompactSolars {
         try {
             cfg.load();
             compactSolarBlock = new BlockCompactSolar();
-            CompactSolarType.buildHats();
+            CompactSolarItems.registerHats();
+
             Property scale = cfg.get("general", "scaleFactor", 1);
-            scale.comment = "The EU generation scaling factor. The average number of ticks needed to generate one EU packet.1 is every tick, 2 is every other tick etc. Each Solar will still generate a whole packet (8, 64, 512 EU).";
-            productionRate = scale.getInt(1);
-        } catch (Exception var7) {
-            FMLLog.log(
-                Level.ERROR,
-                var7,
-                "CompactSolars was unable to load it's configuration successfully",
-                new Object[0]);
-            throw new RuntimeException(var7);
-        } finally {
+            scale.comment = "Generation interval. 1 = generate every tick, 2 = generate on average every other tick, etc. "
+                + "Values below 1 are clamped to 1. This does not change the per-generation EU amount (8, 64 or 512 EU).";
+            int configuredRate = scale.getInt(1);
+            productionRate = sanitizeScaleFactor(configuredRate);
+            if (configuredRate < 1) {
+                LOG.warn("scaleFactor {} is invalid; using 1 instead.", configuredRate);
+                scale.setValue(productionRate);
+            }
+
+            double ic2SolarBase = readIc2SolarBase();
+            Property solarBase = cfg.get("general", "solarBaseValue", ic2SolarBase);
+            solarBase.comment = "EU/t per solar panel at full sky light (15). Defaults to IC2's "
+                + "balance/energy/generator/solar, usually 1.0.";
+            double configuredBase = solarBase.getDouble(ic2SolarBase);
+            solarBaseValue = sanitizeSolarBase(configuredBase);
+            if (configuredBase != solarBaseValue) {
+                LOG.warn("solarBaseValue {} is invalid; using {} instead.", configuredBase, solarBaseValue);
+                solarBase.setValue(solarBaseValue);
+            }
+
+            Property wrench = cfg.get("general", "wrenchParity", true);
+            wrench.comment = "IC2-style wrench behavior. When true, breaking an array without a wrench "
+                + "drops a Basic Machine Casing and a wrench has a 90% chance to preserve the tier. Set "
+                + "false for the old always-drop behavior.";
+            wrenchParity = wrench.getBoolean(true);
+
             cfg.save();
+        } catch (Exception e) {
+            LOG.error("CompactSolars was unable to load its configuration successfully", e);
+            throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Clamps the configurable generation interval to a usable value. A value below 1 would make
+     * {@link java.util.Random#nextInt(int)} throw, so all call sites go through this helper.
+     */
+    public static int sanitizeScaleFactor(int value) {
+        return Math.max(1, value);
+    }
+
+    /** Clamps the per-panel solar base to a finite, non-negative value. */
+    public static double sanitizeSolarBase(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value) || value < 0.0D) {
+            return 1.0D;
+        }
+        return value;
+    }
+
+    /** Reads IC2's balance/energy/generator/solar value, falling back to 1.0 if unavailable. */
+    private static double readIc2SolarBase() {
+        try {
+            if (MainConfig.get() != null) {
+                return sanitizeSolarBase(ConfigUtil.getDouble(MainConfig.get(), "balance/energy/generator/solar"));
+            }
+        } catch (Exception e) {
+            LOG.warn("Unable to read IC2's solar balance; using 1.0.", e);
+        }
+        return 1.0D;
     }
 
     @EventHandler
     public void load(FMLInitializationEvent init) {
         GameRegistry.registerBlock(compactSolarBlock, ItemCompactSolar.class, "CompactSolarBlock");
 
-        for (CompactSolarType typ : CompactSolarType.values()) {
-            GameRegistry.registerTileEntity(typ.clazz, typ.tileEntityName());
+        CompactSolarType[] types = CompactSolarType.values();
+        String[] legacyIds = new String[types.length];
+        for (int i = 0; i < types.length; i++) {
+            legacyIds[i] = types[i].tileEntityName();
         }
+        GameRegistry
+            .registerTileEntityWithAlternatives(TileEntityCompactSolar.class, "CompactSolars:SolarArray", legacyIds);
 
         proxy.registerTileEntityRenderers();
         proxy.registerRenderInformation();
@@ -72,12 +144,7 @@ public class CompactSolars {
 
     @EventHandler
     public void modsLoaded(FMLPostInitializationEvent postinit) {
-        CompactSolarType.generateRecipes(compactSolarBlock);
-        CompactSolarType.generateHatRecipes(compactSolarBlock);
+        CompactSolarRecipes.register(compactSolarBlock);
     }
 
-    @EventHandler
-    public void resetMap(FMLServerStoppingEvent evt) {
-        ItemSolarHat.clearRaining();
-    }
 }
