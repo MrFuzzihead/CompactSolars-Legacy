@@ -22,7 +22,7 @@ import cpw.mods.fml.common.registry.GameRegistry;
     name = "CompactSolars",
     version = Tags.VERSION,
     acceptedMinecraftVersions = "1.7.10",
-    dependencies = "required-after:Forge@[10.12,);required-after:IC2@[2.2.828,)")
+    dependencies = "required-after:IC2")
 public class CompactSolars {
 
     private static final Logger LOG = LogManager.getLogger("CompactSolars");
