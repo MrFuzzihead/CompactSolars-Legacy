@@ -205,7 +205,7 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
     }
 
     public int getTier() {
-        return this.type.ordinal() + 1;
+        return this.type.getTier();
     }
 
     /**

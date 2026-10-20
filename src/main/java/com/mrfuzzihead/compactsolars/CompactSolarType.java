@@ -106,6 +106,10 @@ public enum CompactSolarType {
         return this.output;
     }
 
+    public int getTier() {
+        return this.ordinal() + 1;
+    }
+
     public String getUnlocalizedName() {
         return this.unlocalizedName;
     }
