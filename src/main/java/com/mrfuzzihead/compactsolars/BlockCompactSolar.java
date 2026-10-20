@@ -19,6 +19,7 @@ import net.minecraft.world.World;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import ic2.core.IC2;
 
 public class BlockCompactSolar extends BlockContainer {
 
@@ -32,7 +33,7 @@ public class BlockCompactSolar extends BlockContainer {
         this.setHardness(3.0F);
         this.setStepSound(Block.soundTypeMetal);
         this.random = new Random();
-        this.setCreativeTab(CreativeTabs.tabRedstone);
+        this.setCreativeTab(IC2.tabIC2);
     }
 
     public TileEntity createNewTileEntity(World world, int metadata) {

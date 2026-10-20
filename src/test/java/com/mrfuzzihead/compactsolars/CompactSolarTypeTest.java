@@ -42,11 +42,6 @@ class CompactSolarTypeTest {
         assertEquals(16, CompactSolarType.LV.panelArrayStorage);
         assertEquals(128, CompactSolarType.MV.panelArrayStorage);
         assertEquals(1024, CompactSolarType.HV.panelArrayStorage);
-
-        // BasicSource cannot go below one packet, so LV's 16 EU is raised to 32.
-        assertEquals(32, CompactSolarType.LV.maxStorage);
-        assertEquals(128, CompactSolarType.MV.maxStorage);
-        assertEquals(1024, CompactSolarType.HV.maxStorage);
     }
 
     @Test

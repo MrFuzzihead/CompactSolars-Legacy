@@ -27,6 +27,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import ic2.api.item.ElectricItem;
 import ic2.api.item.IElectricItem;
+import ic2.core.IC2;
 
 public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
 
@@ -43,6 +44,7 @@ public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
         this.type = type;
         this.setUnlocalizedName("compactsolars:" + type.hatName);
         this.setMaxDamage(0);
+        this.setCreativeTab(IC2.tabIC2);
     }
 
     @Override
