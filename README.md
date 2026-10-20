@@ -109,6 +109,13 @@ Remaining known differences:
 
 See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
 
+## World compatibility
+
+All three tiers now share one tile entity class. The tier is persisted in NBT, and the old per-tier
+tile entity IDs (`CompactSolarType.LV`, `CompactSolarType.MV`, `CompactSolarType.HV`) are registered
+as aliases of the unified tile entity, so existing worlds should load their arrays at the correct
+tier. Back up a world before testing an upgrade from an older build.
+
 ## Building
 
 This project uses the GTNewHorizons 1.7.10 Gradle toolchain. The correct JDK is provisioned by
