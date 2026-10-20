@@ -30,6 +30,7 @@ public class BlockCompactSolar extends BlockContainer {
         super(Material.iron);
         this.setBlockName("CompactSolar");
         this.setHardness(3.0F);
+        this.setStepSound(Block.soundTypeMetal);
         this.random = new Random();
         this.setCreativeTab(CreativeTabs.tabRedstone);
     }
