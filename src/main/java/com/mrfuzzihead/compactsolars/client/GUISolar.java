@@ -4,6 +4,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.StatCollector;
 
 import org.lwjgl.opengl.GL11;
 
@@ -15,17 +16,20 @@ public class GUISolar extends GuiContainer {
 
     public static final ResourceLocation gui = new ResourceLocation("ic2", "textures/gui/GUISolarGenerator.png");
     private GUISolar.GUI type;
+    private final String title;
     private ContainerCompactSolar container = (ContainerCompactSolar) this.inventorySlots;
 
     private GUISolar(GUISolar.GUI type, IInventory player, TileEntityCompactSolar chest) {
         super(type.makeContainer(player, chest));
         this.type = type;
         this.allowUserInput = false;
+        this.title = StatCollector.translateToLocal(type.mainType.getUnlocalizedName() + ".name");
     }
 
     protected void drawGuiContainerForegroundLayer(int p1, int p2) {
-        this.fontRendererObj.drawString(this.type.mainType.friendlyName, 8, 6, 4210752);
-        this.fontRendererObj.drawString("Inventory", 8, this.ySize - 96 + 2, 4210752);
+        this.fontRendererObj.drawString(this.title, 8, 6, 4210752);
+        this.fontRendererObj
+            .drawString(StatCollector.translateToLocal("container.inventory"), 8, this.ySize - 96 + 2, 4210752);
     }
 
     protected void drawGuiContainerBackgroundLayer(float f, int i, int j) {
