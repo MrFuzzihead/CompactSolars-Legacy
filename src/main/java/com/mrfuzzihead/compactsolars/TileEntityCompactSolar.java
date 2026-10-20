@@ -16,6 +16,8 @@ import ic2.api.tile.IWrenchable;
 
 public class TileEntityCompactSolar extends TileEntity implements IInventory, IWrenchable {
 
+    private static final int SUN_UPDATE_INTERVAL = 128;
+
     private BasicSource energySource;
     private static Random random = new Random();
     private CompactSolarType type;
@@ -23,7 +25,6 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
     private boolean initialized;
     public boolean theSunIsVisible;
     private int tick;
-    private boolean canRain;
     private boolean noSunlight;
 
     public TileEntityCompactSolar() {
@@ -33,7 +34,7 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
     public TileEntityCompactSolar(CompactSolarType type) {
         this.type = type;
         this.inventory = new ItemStack[1];
-        this.tick = random.nextInt(64);
+        this.tick = random.nextInt(SUN_UPDATE_INTERVAL);
         this.energySource = new BasicSource(this, type.maxStorage, type.ordinal() + 1);
     }
 
@@ -45,9 +46,6 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
 
         this.energySource.onUpdateEntity();
         if (!this.initialized) {
-            this.canRain = this.worldObj.getWorldChunkManager()
-                .getBiomeGenAt(this.xCoord, this.zCoord)
-                .getIntRainfall() > 0;
             this.noSunlight = this.worldObj.provider.hasNoSky;
             if (this.noSunlight) {
                 this.theSunIsVisible = false;
@@ -60,10 +58,10 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
         if (!this.noSunlight) {
             if (this.tick-- == 0) {
                 this.updateSunState();
-                this.tick = 64;
+                this.tick = SUN_UPDATE_INTERVAL;
             }
 
-            int energyProduction = 0;
+            double energyProduction = 0.0D;
             if (this.theSunIsVisible) {
                 int interval = CompactSolars.sanitizeScaleFactor(CompactSolars.productionRate);
                 if (interval == 1 || random.nextInt(interval) == 0) {
@@ -81,13 +79,12 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
     }
 
     private void updateSunState() {
-        boolean isRaining = this.canRain && (this.worldObj.isRaining() || this.worldObj.isThundering());
-        this.theSunIsVisible = this.worldObj.isDaytime() && !isRaining
-            && this.worldObj.canBlockSeeTheSky(this.xCoord, this.yCoord + 1, this.zCoord);
+        this.theSunIsVisible = SolarMath.isSunVisible(this.worldObj, this.xCoord, this.yCoord, this.zCoord);
     }
 
-    private int generateEnergy() {
-        return this.type.getOutput();
+    private double generateEnergy() {
+        int skyLight = SolarMath.skyLight(this.worldObj, this.xCoord, this.zCoord);
+        return this.type.panels * SolarMath.perPanelOutput(skyLight, CompactSolars.solarBaseValue);
     }
 
     public ItemStack[] getContents() {

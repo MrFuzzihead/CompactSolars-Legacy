@@ -16,6 +16,8 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import ic2.core.init.MainConfig;
+import ic2.core.util.ConfigUtil;
 
 @Mod(
     modid = "CompactSolars",
@@ -33,6 +35,7 @@ public class CompactSolars {
     public static CommonProxy proxy;
     public static BlockCompactSolar compactSolarBlock;
     public static int productionRate = 1;
+    public static double solarBaseValue = 1.0D;
     @Instance("CompactSolars")
     public static CompactSolars instance;
 
@@ -55,6 +58,17 @@ public class CompactSolars {
                 scale.setValue(productionRate);
             }
 
+            double ic2SolarBase = readIc2SolarBase();
+            Property solarBase = cfg.get("general", "solarBaseValue", ic2SolarBase);
+            solarBase.comment = "EU/t per solar panel at full sky light (15). Defaults to IC2's "
+                + "balance/energy/generator/solar, usually 1.0.";
+            double configuredBase = solarBase.getDouble(ic2SolarBase);
+            solarBaseValue = sanitizeSolarBase(configuredBase);
+            if (configuredBase != solarBaseValue) {
+                LOG.warn("solarBaseValue {} is invalid; using {} instead.", configuredBase, solarBaseValue);
+                solarBase.setValue(solarBaseValue);
+            }
+
             cfg.save();
         } catch (Exception e) {
             LOG.error("CompactSolars was unable to load its configuration successfully", e);
@@ -68,6 +82,26 @@ public class CompactSolars {
      */
     public static int sanitizeScaleFactor(int value) {
         return Math.max(1, value);
+    }
+
+    /** Clamps the per-panel solar base to a finite, non-negative value. */
+    public static double sanitizeSolarBase(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value) || value < 0.0D) {
+            return 1.0D;
+        }
+        return value;
+    }
+
+    /** Reads IC2's balance/energy/generator/solar value, falling back to 1.0 if unavailable. */
+    private static double readIc2SolarBase() {
+        try {
+            if (MainConfig.get() != null) {
+                return sanitizeSolarBase(ConfigUtil.getDouble(MainConfig.get(), "balance/energy/generator/solar"));
+            }
+        } catch (Exception e) {
+            LOG.warn("Unable to read IC2's solar balance; using 1.0.", e);
+        }
+        return 1.0D;
     }
 
     @EventHandler

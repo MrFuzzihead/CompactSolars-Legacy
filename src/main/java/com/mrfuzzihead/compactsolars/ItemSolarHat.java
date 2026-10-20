@@ -47,29 +47,19 @@ public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
             int interval = CompactSolars.sanitizeScaleFactor(CompactSolars.productionRate);
             if (interval == 1 || random.nextInt(interval) == 0) {
                 int xCoord = MathHelper.floor_double(player.posX);
+                int yCoord = MathHelper.floor_double(player.posY);
                 int zCoord = MathHelper.floor_double(player.posZ);
-                boolean isRaining = false;
-                if (!playerState.containsKey(player)) {
-                    playerState.put(player, new ItemSolarHat.PlayerState());
-                }
 
-                ItemSolarHat.PlayerState state = playerState.get(player);
-                if (worldObj.getTotalWorldTime() % 20L == 0L) {
-                    boolean canRain = worldObj.getWorldChunkManager()
-                        .getBiomeGenAt(xCoord, zCoord)
-                        .getIntRainfall() > 0;
-                    state.canRain = canRain;
-                }
+                if (SolarMath.isSunVisible(worldObj, xCoord, yCoord, zCoord)) {
+                    if (!playerState.containsKey(player)) {
+                        playerState.put(player, new ItemSolarHat.PlayerState());
+                    }
 
-                isRaining = state.canRain && (worldObj.isRaining() || worldObj.isThundering());
-                boolean theSunIsVisible = worldObj.isDaytime() && !isRaining
-                    && worldObj.canBlockSeeTheSky(xCoord, MathHelper.floor_double(player.posY) + 1, zCoord);
-                if (theSunIsVisible) {
+                    ItemSolarHat.PlayerState state = playerState.get(player);
                     int available = this.type.getOutput();
 
                     for (ItemStack is : player.inventory.armorInventory) {
                         if (is != itemStack && is != null && is.getItem() instanceof IElectricItem) {
-                            IElectricItem electricItem = (IElectricItem) is.getItem();
                             available = (int) (available
                                 - ElectricItem.manager.charge(is, available, this.type.ordinal() + 1, false, false));
                         }
@@ -114,7 +104,6 @@ public class ItemSolarHat extends ItemArmor implements ISpecialArmor {
 
     private class PlayerState {
 
-        boolean canRain;
         public long buildUp;
         public long lastTick;
 

@@ -35,6 +35,8 @@ public enum CompactSolarType {
     private ItemSolarHat item;
     public final ResourceLocation hatItemTexture;
     public final int outputPacketSize;
+    public final int panels;
+    public final int panelArrayStorage;
     public final int maxStorage;
     private final String unlocalizedName;
 
@@ -48,7 +50,9 @@ public enum CompactSolarType {
         this.hatName = "solarHat" + this.name();
         this.hatTexture = new ResourceLocation("compactsolars", "textures/armor/" + hatTexture + ".png");
         this.hatItemTexture = new ResourceLocation("compactsolars", hatTexture);
-        this.maxStorage = outputPacketSize << 1;
+        this.panels = output;
+        this.panelArrayStorage = output * 2;
+        this.maxStorage = Math.max(this.panelArrayStorage, outputPacketSize);
         this.unlocalizedName = "tile.compactsolars:" + this.name() + "_block";
     }
 
