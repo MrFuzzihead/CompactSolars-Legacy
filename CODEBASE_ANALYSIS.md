@@ -6,7 +6,7 @@
 `ic2/core/block/generator/tileentity/TileEntityBaseGenerator.java`, decompiled from the
 `industrialcraft-2:2.2.828-experimental:dev` jar used by this build.
 
-> **Status note (batches 1-6):** Batch 1 implemented config/metadata crash guards, server-only tile
+> **Status note (batches 1-7):** Batch 1 implemented config/metadata crash guards, server-only tile
 > updates, on-load sun refresh, charge-slot validation and shift-click fixes, recipe guards, and
 > OreDictionary recipe inputs. Batch 2 implemented IC2's sun predicate and linear sky-light scaling,
 > IC2's solar balance config, 128-tick refresh, two-panel storage, IC2's power-output tooltip format,
@@ -17,7 +17,9 @@
 > removed dead tier fields. Batch 5 replaced the `BasicSource` prefab with a direct `IEnergySource`
 > for exact 16/128/1024 EU storage and added the blocks/hats to IC2's creative tab. Batch 6 added
 > IC2-style wrench behavior (90% tier preservation, Basic Machine Casing fallback on non-wrench breaks/failed rolls)
-> with a config switch. This document describes the state at the time of the review; check the
+> with a config switch. Batch 7 aligned the array charge slot to IC2's LV-only tier-1 behavior and
+> changed hats to chest-only, any-tier, ignore-transfer, no-confusion behavior while keeping the
+> array-rate output. This document describes the state at the time of the review; check the
 > current source and git history for what has landed.
 
 Line references point at the current source files. The code is a faithful cleanup of the original

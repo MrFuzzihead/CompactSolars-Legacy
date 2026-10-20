@@ -25,6 +25,9 @@ The buffer is exactly two panels' worth of storage (16/128/1024 EU).
 Output now follows IC2's solar rules: it scales linearly with `skyLight / 15` and uses IC2's
 `balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512 EU/t.
 
+The charge slot is **LV-only** for every array tier, matching IC2's solar panel: IC2 hardcodes its
+generator charge slot to tier 1 even when the generator's output tier is higher.
+
 ## Solar hats
 
 Each tier also has a solar hat that charges electric armor while the player is in sunlight:
@@ -35,19 +38,13 @@ Each tier also has a solar hat that charges electric armor while the player is i
 | MV Solar Hat | 64 EU/t | 2 |
 | HV Solar Hat | 512 EU/t | 3 |
 
-The hat charges all equipped electric armor except itself, is limited by the armor's transfer limit,
-and builds up a confusion effect while it is actively charging.
+Each hat charges **only the chestplate**, accepts **any tier** (`Integer.MAX_VALUE`), ignores the
+armor's transfer limit, and has **no confusion mechanic**. It keeps the array-rate output
+(8/64/512 EU/t) and syncs the player's container after a successful charge.
 
-IC2's own solar helmet behavior is different:
-
-- charges **only the chestplate**;
-- charges at **1 EU/t**, regardless of how many panels the helmet represents;
-- accepts **any tier** (`Integer.MAX_VALUE`) and ignores the item's transfer limit;
-- uses the same binary sun-visible check, with no sky-light scaling;
-- has no confusion/build-up mechanic;
-- has infinite durability and zero armor display.
-
-CompactSolars hats intentionally use the array-rate, all-armor behavior instead.
+IC2's own solar helmet uses the same chest-only/any-tier/ignore-transfer/no-confusion model, but
+charges at **1 EU/t** regardless of the panel count and has no useful tooltip. CompactSolars keeps
+the array-rate output, the tooltip, and the per-tier textures.
 
 Hats use a single shared, infinite-durability armor material. Their tooltip shows the charge rate
 (`Power Output: X EU/t max`), the power tier, and a short description.
@@ -124,7 +121,8 @@ The array generation rules now match IC2's solar generator:
 
 Remaining known differences:
 
-- Hats use the array-rate/all-armor behavior described above rather than IC2's solar-helmet behavior.
+- Hats use the array-rate output (8/64/512 EU/t) rather than IC2's flat 1 EU/t; the chest-only,
+  any-tier, ignore-transfer, and no-confusion behavior now matches IC2.
 - The GPLv3/MIT licensing question is unresolved.
 
 See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
