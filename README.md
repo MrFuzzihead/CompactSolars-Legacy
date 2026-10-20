@@ -41,10 +41,15 @@ and builds up a confusion effect while it is actively charging. IC2's own solar 
 the chestplate at 1 EU/t and ignores transfer limits; the hat behavior is intentionally different and
 is documented in the analysis.
 
+Hats use a single shared, infinite-durability armor material. Their tooltip shows the charge rate
+(`Power Output: X EU/t max`), the power tier, and a short description.
+
 ## Presentation
 
-- **Tooltip:** matches IC2's solar panel format, e.g. `Power Output: 8 EU/t max`, using IC2's own
-  localization keys.
+- **Array tooltip:** matches IC2's solar panel format, e.g. `Power Output: 8 EU/t max`, using
+  IC2's own localization keys.
+- **Hat tooltip:** shows the charge rate, `Power Tier: n`, and a short description.
+- **GUI:** the array title and inventory label are localized.
 - **Sound:** uses IC2's metal block step/place/break sound. IC2's solar panel has no ambient
   generator loop, so there is no continuous hum.
 
@@ -99,7 +104,6 @@ Remaining known differences:
 
 - LV buffer is 32 EU instead of an exact 16 EU (the IC2 `BasicSource` minimum is one packet).
 - Hats use the array-rate/all-armor behavior described above rather than IC2's solar-helmet behavior.
-- GUI title/label are not localized yet.
 - Wrench behavior is still drop-rate 1.0 and does not require a wrench.
 - The GPLv3/MIT licensing question is unresolved.
 

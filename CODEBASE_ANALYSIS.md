@@ -6,13 +6,14 @@
 `ic2/core/block/generator/tileentity/TileEntityBaseGenerator.java`, decompiled from the
 `industrialcraft-2:2.2.828-experimental:dev` jar used by this build.
 
-> **Status note (batches 1-2):** Batch 1 implemented config/metadata crash guards, server-only tile
+> **Status note (batches 1-3):** Batch 1 implemented config/metadata crash guards, server-only tile
 > updates, on-load sun refresh, charge-slot validation and shift-click fixes, recipe guards, and
 > OreDictionary recipe inputs. Batch 2 implemented IC2's sun predicate and linear sky-light scaling,
 > IC2's solar balance config, 128-tick refresh, two-panel storage (LV clamped to one packet by
-> `BasicSource`), IC2's power-output tooltip format, and the metal block step sound. This document
-> describes the state at the time of the review; check the current source and git history for what
-> has landed.
+> `BasicSource`), IC2's power-output tooltip format, and the metal block step sound. Batch 3 added
+> solar-hat tooltips, a single infinite-durability hat material, consistent hat build-up decay, and
+> localized GUI title/inventory labels. This document describes the state at the time of the review;
+> check the current source and git history for what has landed.
 
 Line references point at the current source files. The code is a faithful cleanup of the original
 2014 CompactSolars source (the GPLv3 cpw implementation), so many findings are inherited rather than
