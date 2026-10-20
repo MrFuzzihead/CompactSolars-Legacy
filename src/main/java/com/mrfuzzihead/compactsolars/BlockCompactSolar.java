@@ -78,8 +78,13 @@ public class BlockCompactSolar extends BlockContainer {
         }
     }
 
+    /**
+     * IC2-style break drop. Without a wrench (or when a wrench roll fails) the lowest tier is
+     * dropped; a successful wrench operation replaces this with the correct tier via
+     * IWrenchable#getWrenchDrop.
+     */
     public int damageDropped(int metadata) {
-        return CompactSolarType.clampMetadata(metadata);
+        return CompactSolars.breakDropMetadata(metadata, CompactSolars.wrenchParity);
     }
 
     public void breakBlock(World world, int i, int j, int k, Block par5, int par6) {

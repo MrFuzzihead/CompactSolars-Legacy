@@ -7,6 +7,21 @@ import org.junit.jupiter.api.Test;
 class CompactSolarsConfigTest {
 
     @Test
+    void wrenchParityDropsLowestTierWhenEnabled() {
+        assertEquals(0, CompactSolars.breakDropMetadata(0, true));
+        assertEquals(0, CompactSolars.breakDropMetadata(1, true));
+        assertEquals(0, CompactSolars.breakDropMetadata(2, true));
+    }
+
+    @Test
+    void nonParityDropsOriginalTier() {
+        assertEquals(0, CompactSolars.breakDropMetadata(0, false));
+        assertEquals(1, CompactSolars.breakDropMetadata(1, false));
+        assertEquals(2, CompactSolars.breakDropMetadata(2, false));
+        assertEquals(0, CompactSolars.breakDropMetadata(3, false));
+    }
+
+    @Test
     void solarBaseIsClampedToFiniteNonNegative() {
         assertEquals(1.0D, CompactSolars.sanitizeSolarBase(1.0D), 0.0D);
         assertEquals(0.5D, CompactSolars.sanitizeSolarBase(0.5D), 0.0D);

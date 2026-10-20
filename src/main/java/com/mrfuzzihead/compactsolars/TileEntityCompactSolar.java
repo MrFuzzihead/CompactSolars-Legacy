@@ -261,7 +261,7 @@ public class TileEntityCompactSolar extends TileEntity implements IInventory, IW
     }
 
     public float getWrenchDropRate() {
-        return 1.0F;
+        return CompactSolars.wrenchParity ? 0.9F : 1.0F;
     }
 
     @Override
