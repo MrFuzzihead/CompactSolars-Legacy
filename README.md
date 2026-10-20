@@ -124,7 +124,6 @@ Remaining known differences:
 
 - Hats use the array-rate output (8/64/512 EU/t) rather than IC2's flat 1 EU/t; the chest-only,
   any-tier, ignore-transfer, and no-confusion behavior now matches IC2.
-- The GPLv3/MIT licensing question is unresolved.
 
 See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
 
@@ -150,9 +149,8 @@ Built jars are placed in `build/libs/`.
 
 ## License
 
-Upstream CompactSolars is licensed under **GPL v3**. This repository's `LICENSE` file currently says
-MIT and the imported source headers were removed during the port; the licensing status is unresolved
-and must be decided before distribution. See `LICENSE` and the upstream project for details.
+This project is licensed under the **GNU General Public License v3.0**. See [LICENSE](LICENSE) for the
+full text. CompactSolars-Legacy is derived from cpw's CompactSolars, which was also GPLv3.
 
 ## Credits
 

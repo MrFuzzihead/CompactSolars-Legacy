@@ -6,7 +6,7 @@
 `ic2/core/block/generator/tileentity/TileEntityBaseGenerator.java`, decompiled from the
 `industrialcraft-2:2.2.828-experimental:dev` jar used by this build.
 
-> **Status note (batches 1-7):** Batch 1 implemented config/metadata crash guards, server-only tile
+> **Status note (batches 1-8):** Batch 1 implemented config/metadata crash guards, server-only tile
 > updates, on-load sun refresh, charge-slot validation and shift-click fixes, recipe guards, and
 > OreDictionary recipe inputs. Batch 2 implemented IC2's sun predicate and linear sky-light scaling,
 > IC2's solar balance config, 128-tick refresh, two-panel storage, IC2's power-output tooltip format,
@@ -19,8 +19,9 @@
 > IC2-style wrench behavior (90% tier preservation, Basic Machine Casing fallback on non-wrench breaks/failed rolls)
 > with a config switch. Batch 7 aligned the array charge slot to the array's output tier (LV/MV/HV) and
 > changed hats to chest-only, any-tier, ignore-transfer, no-confusion behavior while keeping the
-> array-rate output. This document describes the state at the time of the review; check the
-> current source and git history for what has landed.
+> array-rate output. Batch 8 resolved the licensing question by adopting GPLv3, replacing the MIT
+> license and restoring GPLv3 notices on the source files. This document describes the state at the
+> time of the review; check the current source and git history for what has landed.
 
 Line references point at the current source files. The code is a faithful cleanup of the original
 2014 CompactSolars source (the GPLv3 cpw implementation), so many findings are inherited rather than
@@ -63,10 +64,10 @@ Highest-impact findings:
 6. **Hats diverge substantially from IC2's solar helmet** (all armor vs chest only, tier-limited vs
    `Integer.MAX_VALUE`, transfer-limited vs ignore-transfer, confusion effect, 11 durability vs
    infinite), and their `buildUp`/`lastTick` logic looks inverted/incorrect.
-7. **The docs and licensing are wrong.** `README.md` is the README for a completely different mod
-   (IC2Tweaks). Upstream CompactSolars is GPLv3 (the imported source headers said so and upstream's
-   README says so), but this repository ships an MIT `LICENSE` with the headers removed. Resolve
-   before distributing.
+7. **The docs and licensing were inconsistent.** `README.md` was the README for a completely
+   different mod, and the repository shipped MIT while upstream CompactSolars is GPLv3. This is now
+   resolved: the README describes CompactSolars, the project is GPLv3, and source notices are
+   restored.
 8. **Storage does not match an equivalent panel array.** IC2 panels store 2 EU each; an 8/64/512
    array should store 16/128/1024. CS stores 2 *packets* = 64/256/1024 (4×/2×/1×).
 9. **Several smaller contract bugs**: `createNewTileEntity` returns `null`, recipes can crash on a
@@ -139,18 +140,11 @@ CompactSolars.productionRate = raw;
 **Fix:** a single `SolarTier.byMetadata(int)` that clamps/logs, precomputed unlocalized names, and a
 non-null icon fallback.
 
-#### B3. The README and license are inconsistent with the project and its upstream
+#### B3. The README and license were inconsistent — resolved
 
-- `README.md` is the README for **IC2Tweaks**, a different mod (global energy-net overload,
-  `com.mrfuzzihead.ic2tweaks`, different config, different feature list). It does not describe
-  CompactSolars at all.
-- Upstream `cpw/compactsolars` states "licensed as GPL v3"; the imported 2014 sources carried
-  GPLv3 headers. This repository ships an **MIT** `LICENSE` and the headers were removed in the
-  cleanup. Unless the author has explicit permission to relicense, the derivative should remain
-  GPLv3. This is a distribution/legal risk, not a code bug, but it belongs at S1.
-
-**Fix:** rewrite the README for CompactSolars (features, tiers, config, recipes, parity notes),
-restore the upstream GPLv3 license/headers or document the permission, and align the badge.
+- `README.md` was the README for **IC2Tweaks**, a different mod. It now documents CompactSolars.
+- Upstream `cpw/compactsolars` is GPLv3 and the imported sources carried GPLv3 headers. The project
+  now ships the GPLv3 `LICENSE` and restored GPLv3 source notices; the MIT license was removed.
 
 ### 2.2 S2 — Gameplay and IC2-parity bugs
 
@@ -1146,6 +1140,6 @@ Testing this class is straightforward: `perPanelOutput(4, 1) == 0`, `(5,1) == 1/
 - [ ] One static hat `ArmorMaterial`; `setMaxDamage(0)`.
 - [ ] Localize GUI title/label; add item tooltip.
 - [ ] Decide storage semantics and document.
-- [ ] Rewrite README; resolve GPLv3/MIT.
+- [x] Rewrite README; adopt GPLv3 and restore source notices.
 - [ ] Add tests for `SolarTier`, `SolarSun`, config validation.
 - [ ] Remove dead code/unused assets; cache `values()`; use `Locale.ROOT`.
