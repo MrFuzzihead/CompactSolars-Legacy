@@ -16,12 +16,15 @@ IC2 solar panels into a single block.
 
 | Tier | Equivalent IC2 panels | Output at full sun | IC2 tier | Packet power | Buffer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| LV | 8 | 8 EU/t | 1 | 32 EU | 64 EU |
-| MV | 64 | 64 EU/t | 2 | 128 EU | 256 EU |
+| LV | 8 | 8 EU/t | 1 | 32 EU | 32 EU |
+| MV | 64 | 64 EU/t | 2 | 128 EU | 128 EU |
 | HV | 512 | 512 EU/t | 3 | 512 EU | 1024 EU |
 
-The buffer is currently two packets, not two panels. See
-[CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full parity analysis and planned changes.
+The buffer is two panels' worth of storage (16/128/1024 EU). `BasicSource` cannot go below one
+packet, so LV's 16 EU is raised to 32 EU.
+
+Output now follows IC2's solar rules: it scales linearly with `skyLight / 15` and uses IC2's
+`balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512 EU/t.
 
 ## Solar hats
 
@@ -38,13 +41,21 @@ and builds up a confusion effect while it is actively charging. IC2's own solar 
 the chestplate at 1 EU/t and ignores transfer limits; the hat behavior is intentionally different and
 is documented in the analysis.
 
+## Presentation
+
+- **Tooltip:** matches IC2's solar panel format, e.g. `Power Output: 8 EU/t max`, using IC2's own
+  localization keys.
+- **Sound:** uses IC2's metal block step/place/break sound. IC2's solar panel has no ambient
+  generator loop, so there is no continuous hum.
+
 ## Configuration
 
 `config/CompactSolars.cfg`:
 
 | Option | Default | Description |
 | --- | ---: | --- |
-| `general.scaleFactor` | `1` | Generation interval. `1` generates every tick; `2` generates on average every other tick, etc. Values below `1` are clamped to `1`. This does not change the per-generation EU amount (8, 64, or 512 EU). |
+| `general.scaleFactor` | `1` | Generation interval. `1` generates every tick; `2` generates on average every other tick, etc. Values below `1` are clamped to `1`. This does not change the per-generation EU amount. |
+| `general.solarBaseValue` | IC2's `balance/energy/generator/solar` (usually `1.0`) | EU/t per panel at full sky light (15). Set to `0` to disable generation. Negative or NaN values fall back to `1.0`. |
 
 ## Recipes
 
@@ -76,17 +87,23 @@ entries above are registered by CompactSolars and can be extended by other mods 
 
 ## IC2 parity status
 
-The arrays match IC2 panel output at **full noon** (8/64/512 EU/t for 8/64/512 panels), but the
-current sun logic is not yet fully uniform with IC2:
+The array generation rules now match IC2's solar generator:
 
-- CompactSolars uses `world.isDaytime()` (effectively sky light ≥ 12) and a fixed output.
-- IC2 uses `skyLight > 4` and scales output linearly with `skyLight / 15`.
-- The arrays do not yet read IC2's `balance/energy/generator/solar` config.
-- The current buffer is two packets (64/256/1024 EU), not two panels (16/128/1024 EU).
+- sun predicate: `skyLight > 4`, no-sky check, `canBlockSeeTheSky`, desert exception, rain/thunder
+  check;
+- linear `skyLight / 15` output scaling;
+- IC2 `balance/energy/generator/solar` value by default;
+- 128-tick sun refresh and an immediate refresh on load.
 
-A formula-level simulation of a clear day gives roughly 92.4% of the equivalent IC2 panels per day,
-despite matching at noon. The planned parity work is described in
-[CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md).
+Remaining known differences:
+
+- LV buffer is 32 EU instead of an exact 16 EU (the IC2 `BasicSource` minimum is one packet).
+- Hats use the array-rate/all-armor behavior described above rather than IC2's solar-helmet behavior.
+- GUI title/label are not localized yet.
+- Wrench behavior is still drop-rate 1.0 and does not require a wrench.
+- The GPLv3/MIT licensing question is unresolved.
+
+See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
 
 ## Building
 
