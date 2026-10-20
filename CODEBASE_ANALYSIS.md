@@ -17,7 +17,7 @@
 > removed dead tier fields. Batch 5 replaced the `BasicSource` prefab with a direct `IEnergySource`
 > for exact 16/128/1024 EU storage and added the blocks/hats to IC2's creative tab. Batch 6 added
 > IC2-style wrench behavior (90% tier preservation, Basic Machine Casing fallback on non-wrench breaks/failed rolls)
-> with a config switch. Batch 7 aligned the array charge slot to IC2's LV-only tier-1 behavior and
+> with a config switch. Batch 7 aligned the array charge slot to the array's output tier (LV/MV/HV) and
 > changed hats to chest-only, any-tier, ignore-transfer, no-confusion behavior while keeping the
 > array-rate output. This document describes the state at the time of the review; check the
 > current source and git history for what has landed.

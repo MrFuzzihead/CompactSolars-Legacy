@@ -25,8 +25,9 @@ The buffer is exactly two panels' worth of storage (16/128/1024 EU).
 Output now follows IC2's solar rules: it scales linearly with `skyLight / 15` and uses IC2's
 `balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512 EU/t.
 
-The charge slot is **LV-only** for every array tier, matching IC2's solar panel: IC2 hardcodes its
-generator charge slot to tier 1 even when the generator's output tier is higher.
+The charge slot matches the array's output tier: LV charges LV, MV charges up to MV, and HV charges
+up to HV, like IC2's BatBox/CESU/MFE/MFSU storage blocks. IC2's solar panel's own slot happens to be
+tier 1 because its output is tier 1; CompactSolars intentionally exposes the higher array tier.
 
 ## Solar hats
 
