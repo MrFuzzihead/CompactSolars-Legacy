@@ -65,7 +65,7 @@ public class CompactSolars {
 
             Property scale = cfg.get("general", "scaleFactor", 1);
             scale.comment = "Generation interval. 1 = generate every tick, 2 = generate on average every other tick, etc. "
-                + "Values below 1 are clamped to 1. This does not change the per-generation EU amount (8, 64 or 512 EU).";
+                + "Values below 1 are clamped to 1. This does not change the per-generation EU amount (8, 64, 512 or 2048 EU).";
             int configuredRate = scale.getInt(1);
             productionRate = sanitizeScaleFactor(configuredRate);
             if (configuredRate < 1) {

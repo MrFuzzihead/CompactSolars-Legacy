@@ -15,7 +15,7 @@
  */
 package com.mrfuzzihead.compactsolars;
 
-/** Registration of the three solar-hat items. */
+/** Registration of the solar-hat items. */
 public final class CompactSolarItems {
 
     private CompactSolarItems() {}

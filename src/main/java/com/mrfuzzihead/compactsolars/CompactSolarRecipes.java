@@ -18,7 +18,6 @@ package com.mrfuzzihead.compactsolars;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
-import net.minecraftforge.oredict.ShapedOreRecipe;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 import org.apache.logging.log4j.LogManager;
@@ -30,7 +29,6 @@ import ic2.api.item.IC2Items;
 /** Array and hat recipe registration for CompactSolars. */
 public final class CompactSolarRecipes {
 
-    public static final String ORE_SOLAR_PANEL = "solarPanel";
     public static final String ORE_HELMET_IRON = "helmetIron";
 
     private static final Logger LOG = LogManager.getLogger("CompactSolars");
@@ -54,7 +52,6 @@ public final class CompactSolarRecipes {
             return;
         }
 
-        OreDictionary.registerOre(ORE_SOLAR_PANEL, solar);
         ItemStack parent = solar;
 
         for (CompactSolarType typ : CompactSolarType.values()) {
@@ -67,12 +64,11 @@ public final class CompactSolarRecipes {
                 return;
             }
 
-            String transformerOre = typ.transformerOreName();
-            OreDictionary.registerOre(transformerOre, transformer);
-
             ItemStack target = new ItemStack(block, 1, typ.ordinal());
-            Object source = typ == CompactSolarType.LV ? ORE_SOLAR_PANEL : parent;
-            GameRegistry.addRecipe(new ShapedOreRecipe(target, "SSS", "SXS", "SSS", 'S', source, 'X', transformerOre));
+            Object[] recipe = typ.getRecipeInputCount() == 8
+                ? new Object[] { "SSS", "SXS", "SSS", 'S', parent, 'X', transformer }
+                : new Object[] { " S ", "SXS", " S ", 'S', parent, 'X', transformer };
+            GameRegistry.addRecipe(target, recipe);
 
             parent = target;
         }
