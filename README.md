@@ -19,15 +19,20 @@ IC2 solar panels into a single block.
 | LV | 8 | 8 EU/t | 1 | 32 EU | 16 EU |
 | MV | 64 | 64 EU/t | 2 | 128 EU | 128 EU |
 | HV | 512 | 512 EU/t | 3 | 512 EU | 1024 EU |
+| EV | 2048 | 2048 EU/t | 4 | 2048 EU | 4096 EU |
 
-The buffer is exactly two panels' worth of storage (16/128/1024 EU).
+The buffer is exactly two panels' worth of storage (16/128/1024/4096 EU).
 
 Output now follows IC2's solar rules: it scales linearly with `skyLight / 15` and uses IC2's
-`balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512 EU/t.
+`balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512/2048 EU/t.
+LV/MV/HV combine eight of the previous tier; EV is a 4× voltage step, so it combines four HV arrays
+(2048 panels) and outputs 2048 EU/t. Keeping EV to one 2048 EU/t packet also keeps it compatible
+with IC2Tweaks' packet-model source cap and avoids over-tier explosions at EV sinks.
 
-The charge slot matches the array's output tier: LV charges LV, MV charges up to MV, and HV charges
-up to HV, like IC2's BatBox/CESU/MFE/MFSU storage blocks. IC2's solar panel's own slot happens to be
-tier 1 because its output is tier 1; CompactSolars intentionally exposes the higher array tier.
+The charge slot matches the array's output tier: LV charges LV, MV charges up to MV, HV charges
+up to HV, and EV charges up to EV, like IC2's BatBox/CESU/MFE/MFSU storage blocks. IC2's solar
+panel's own slot happens to be tier 1 because its output is tier 1; CompactSolars intentionally
+exposes the higher array tier.
 
 ## Solar hats
 
@@ -38,10 +43,11 @@ Each tier also has a solar hat that charges electric armor while the player is i
 | LV Solar Hat | 8 EU/t | 1 |
 | MV Solar Hat | 64 EU/t | 2 |
 | HV Solar Hat | 512 EU/t | 3 |
+| EV Solar Hat | 2048 EU/t | 4 |
 
 Each hat charges **only the chestplate**, accepts **any tier** (`Integer.MAX_VALUE`), ignores the
 armor's transfer limit, and has **no confusion mechanic**. It keeps the array-rate output
-(8/64/512 EU/t) and syncs the player's container after a successful charge.
+(8/64/512/2048 EU/t) and syncs the player's container after a successful charge.
 
 IC2's own solar helmet uses the same chest-only/any-tier/ignore-transfer/no-confusion model, but
 charges at **1 EU/t** regardless of the panel count and has no useful tooltip. CompactSolars keeps
@@ -74,8 +80,8 @@ Hats use a single shared, infinite-durability armor material. Their tooltip show
 
 With `wrenchParity=true` (the default):
 
-- Breaking an array without a wrench drops a **Basic Machine Casing**, even for MV/HV. This is the
-  IC2-style machine drop for a machine broken without a wrench.
+- Breaking an array without a wrench drops a **Basic Machine Casing**, even for MV/HV/EV. This is
+  the IC2-style machine drop for a machine broken without a wrench.
 - A wrench roll has a **90%** chance to preserve the original tier. On failure, the normal Basic
   Machine Casing drop is used.
 - IC2's electric wrench lossless mode can force a successful wrench operation, matching IC2's
@@ -84,31 +90,29 @@ With `wrenchParity=true` (the default):
 
 ## Recipes
 
-Array recipes are shaped and use eight of the previous tier:
+Array recipes are shaped and use eight of the previous tier (four for EV, which is a 4× voltage
+step):
 
 - **LV Solar Array:** 8 IC2 solar panels + 1 LV transformer
 - **MV Solar Array:** 8 LV Solar Arrays + 1 MV transformer
 - **HV Solar Array:** 8 MV Solar Arrays + 1 HV transformer
+- **EV Solar Array:** 4 HV Solar Arrays + 1 EV transformer
 
 Hat recipes are shapeless:
 
 - **Solar Hat:** 1 matching Solar Array + 1 iron helmet
 
-### OreDictionary support
+### Recipe inputs
 
-The recipes use Forge's OreDictionary where possible, so packs and other mods can substitute
-alternatives:
+Array recipes use IC2's solar panel and transformer items directly. The solar hat recipe uses
+Forge's OreDictionary for the iron helmet, so packs and other mods can substitute alternatives:
 
 | Ore name | Registered default |
 | --- | --- |
-| `solarPanel` | IC2 solar panel |
-| `transformerLV` | IC2 LV transformer |
-| `transformerMV` | IC2 MV transformer |
-| `transformerHV` | IC2 HV transformer |
 | `helmetIron` | vanilla iron helmet |
 
-If an IC2 input is missing, recipe registration logs an error instead of crashing the game. The ore
-entries above are registered by CompactSolars and can be extended by other mods or pack scripts.
+If an IC2 input is missing, recipe registration logs an error instead of crashing the game. The
+`helmetIron` entry is registered by CompactSolars and can be extended by other mods or pack scripts.
 
 ## IC2 parity status
 
@@ -122,17 +126,18 @@ The array generation rules now match IC2's solar generator:
 
 Remaining known differences:
 
-- Hats use the array-rate output (8/64/512 EU/t) rather than IC2's flat 1 EU/t; the chest-only,
-  any-tier, ignore-transfer, and no-confusion behavior now matches IC2.
+- Hats use the array-rate output (8/64/512/2048 EU/t) rather than IC2's flat 1 EU/t; the
+  chest-only, any-tier, ignore-transfer, and no-confusion behavior now matches IC2.
 
 See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
 
 ## World compatibility
 
-All three tiers now share one tile entity class. The tier is persisted in NBT, and the old per-tier
-tile entity IDs (`CompactSolarType.LV`, `CompactSolarType.MV`, `CompactSolarType.HV`) are registered
-as aliases of the unified tile entity, so existing worlds should load their arrays at the correct
-tier. Back up a world before testing an upgrade from an older build.
+All four tiers now share one tile entity class. The tier is persisted in NBT, and the old per-tier
+tile entity IDs (`CompactSolarType.LV`, `CompactSolarType.MV`, `CompactSolarType.HV`,
+`CompactSolarType.EV`) are registered as aliases of the unified tile entity, so existing worlds
+should load their arrays at the correct tier. Back up a world before testing an upgrade from an
+older build.
 
 ## Building
 

@@ -26,7 +26,8 @@ public enum CompactSolarType {
 
     LV(8, 32, "lvTransformer", "lvHat"),
     MV(64, 128, "mvTransformer", "mvHat"),
-    HV(512, 512, "hvTransformer", "hvHat");
+    HV(512, 512, "hvTransformer", "hvHat"),
+    EV(2048, 2048, "evTransformer", "evHat");
 
     private static final CompactSolarType[] VALUES = values();
     private static final Logger LOG = LogManager.getLogger("CompactSolars");
@@ -76,12 +77,16 @@ public enum CompactSolarType {
         return this.ordinal() + 1;
     }
 
-    public String getUnlocalizedName() {
-        return this.unlocalizedName;
+    /**
+     * Number of previous-tier arrays (or IC2 panels for LV) used by the array recipe. LV/MV/HV use
+     * eight; EV is a 4× voltage step, so four HV arrays reach its 2048 EU/t output.
+     */
+    public int getRecipeInputCount() {
+        return this == EV ? 4 : 8;
     }
 
-    public String transformerOreName() {
-        return "transformer" + this.name();
+    public String getUnlocalizedName() {
+        return this.unlocalizedName;
     }
 
     public static TileEntityCompactSolar makeEntity(int metadata) {
